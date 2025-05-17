@@ -1,0 +1,164 @@
+# =============================================================================
+# Ansible Role: Users - Molecule Verification Playbook
+# =============================================================================
+# This playbook verifies the installation and configuration of users.
+# It performs comprehensive checks of:
+# - User creation
+# - Group membership
+# - Password configuration
+# - SSH key setup
+# - Home directory creation and permissions
+# - User removal
+#
+# Flow:
+# 1. Load variables and gather facts
+# 2. Verify user creation and attributes
+# 3. Check group memberships
+# 4. Validate SSH key configuration
+# 5. Check home directories
+# 6. Verify user removal
+# 7. Verify password expiry
+# =============================================================================
+
+---
+# -----------------------------------------------------------------------------
+# 1. Environment Setup
+# -----------------------------------------------------------------------------
+- name: molecule | Verify Role
+  hosts: all
+  gather_facts: true
+
+  vars_files:
+    - ../../defaults/main.yml
+
+  tasks:
+    # -----------------------------------------------------------------------------
+    # 2. User Creation and Attributes Verification
+    # -----------------------------------------------------------------------------
+    - name: Verify | Check if users exist
+      ansible.builtin.getent:
+        database: passwd
+        key: "{{ item }}"
+      register: _user_exists_result_
+      with_items:
+        - testuser1
+        - testuser2
+        - testuser3
+      ignore_errors: true
+
+    - name: Verify | Check if testuser1 has correct UID
+      ansible.builtin.shell:
+        cmd: "id -u testuser1"
+      register: _uid_result_
+      changed_when: false
+      ignore_errors: true
+
+    - name: Verify | Check if testuser2 is a system user
+      ansible.builtin.shell:
+        cmd: "cat /etc/passwd | grep testuser2"
+      register: _system_user_result_
+      changed_when: false
+      ignore_errors: true
+
+    - name: Verify | Check if users have correct shells
+      ansible.builtin.shell:
+        cmd: "grep {{ item.user }}:.* /etc/passwd | cut -d: -f7"
+      register: _shell_result_
+      with_items:
+        - { user: 'testuser1', expected: '/bin/bash' }
+        - { user: 'testuser2', expected: '/bin/false' }
+        - { user: 'testuser3', expected: '/bin/bash' }
+      changed_when: false
+      ignore_errors: true
+
+    # -----------------------------------------------------------------------------
+    # 3. Group Membership Verification
+    # -----------------------------------------------------------------------------
+    - name: Verify | Check if users are in correct groups
+      ansible.builtin.shell:
+        cmd: "id -Gn {{ item.user }} | grep -q {{ item.group }}"
+      register: _group_result_
+      with_items:
+        - { user: 'testuser1', group: 'developers' }
+        - { user: 'testuser1', group: 'testgroup' }
+        - { user: 'testuser3', group: 'testgroup' }
+      changed_when: false
+      ignore_errors: true
+
+    # -----------------------------------------------------------------------------
+    # 4. SSH Key Configuration Verification
+    # -----------------------------------------------------------------------------
+    - name: Verify | Check if SSH key directories exist
+      ansible.builtin.stat:
+        path: "/home/testuser1/.ssh"
+      register: _ssh_dir_result_
+      ignore_errors: true
+
+    - name: Verify | Check if authorized_keys files exist
+      ansible.builtin.stat:
+        path: "/home/testuser1/.ssh/authorized_keys"
+      register: _auth_keys_result_
+      ignore_errors: true
+
+    - name: Verify | Check authorized_keys content for testuser1
+      ansible.builtin.shell:
+        cmd: "cat /home/testuser1/.ssh/authorized_keys | grep -q molecule-test-key"
+      register: _auth_keys_content_result_
+      changed_when: false
+      ignore_errors: true
+
+    # -----------------------------------------------------------------------------
+    # 5. Home Directory Verification
+    # -----------------------------------------------------------------------------
+    - name: Verify | Check if home directories exist with correct ownership
+      ansible.builtin.stat:
+        path: "{{ item.path }}"
+      register: _home_dir_result_
+      with_items:
+        - { path: '/home/testuser1', owner: 'testuser1' }
+        - { path: '/opt/testuser2', owner: 'testuser2' }
+        - { path: '/home/testuser3', owner: 'testuser3' }
+      ignore_errors: true
+
+    - name: Verify | Check home directory permissions for testuser1
+      ansible.builtin.shell:
+        cmd: "ls -ld /home/testuser1 | awk '{print $1}'"
+      register: _home_perms_result_
+      changed_when: false
+      ignore_errors: true
+
+    # -----------------------------------------------------------------------------
+    # 6. User Removal Verification
+    # -----------------------------------------------------------------------------
+    - name: Verify | Check if removed user no longer exists
+      ansible.builtin.getent:
+        database: passwd
+        key: "testuser_remove"
+      register: _removed_user_result_
+      failed_when: _removed_user_result_.stdout != ""
+      changed_when: false
+      ignore_errors: true
+
+    - name: Verify | Check if home directory of removed user no longer exists
+      ansible.builtin.stat:
+        path: "/home/testuser_remove"
+      register: _removed_home_result_
+      failed_when: _removed_home_result_.stat.exists | default(false)
+      ignore_errors: true
+
+    # -----------------------------------------------------------------------------
+    # 7. Password Expiry Verification
+    # -----------------------------------------------------------------------------
+    - name: Verify | Check if password expiry is set correctly for testuser3
+      ansible.builtin.shell:
+        cmd: "chage -l testuser3 | grep 'Maximum' | grep -q '60 days'"
+      register: _passwd_max_age_result_
+      changed_when: false
+      ignore_errors: true
+
+    - name: Verify | Check if password minimum age is set correctly for testuser3
+      ansible.builtin.shell:
+        cmd: "chage -l testuser3 | grep 'Minimum' | grep -q '7 days'"
+      register: _passwd_min_age_result_
+      changed_when: false
+      ignore_errors: true

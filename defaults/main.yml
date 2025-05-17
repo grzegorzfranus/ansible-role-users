@@ -1,0 +1,142 @@
+---
+# =============================================================================
+# Ansible Role: Users - Default Variables
+# =============================================================================
+# This file defines default configuration values for the Users management role.
+# These values can be overridden by setting them in your playbook or inventory.
+#
+# Sections:
+#   1. General Settings
+#   2. User Default Configuration
+#   3. Password Generation Settings
+#   4. SSH Key Management
+#   5. User Definitions
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# 1. General Settings
+# -----------------------------------------------------------------------------
+# Role execution control and basic configuration options
+
+# Define which parts of the role to execute (Options: 'all', 'create', 'remove')
+users_role_action: "all"
+
+# Home directory settings
+# Whether to create home directories for new users
+users_create_home: true
+
+# Whether to remove home directories when removing users
+users_remove_home: true
+
+# -----------------------------------------------------------------------------
+# 2. User Default Configuration
+# -----------------------------------------------------------------------------
+# Default settings applied to all users unless overridden
+
+# Default shell for new users
+# This shell will be assigned to all new users unless explicitly overridden
+users_default_shell: "/bin/bash"
+
+# Default password expiration settings (in days)
+# Maximum password age before requiring change
+users_password_max_age: 90
+
+# Minimum password age before allowing change
+users_password_min_age: 0
+
+# Default group settings
+# Whether to create a primary group with the same name as the user
+users_create_group: true
+
+# Additional groups to add all users to by default
+# Example: ["users", "adm"]
+users_default_groups: []
+
+# Whether to append to existing groups (true) or replace them (false)
+# When true, users will be added to groups without removing existing memberships
+# When false, users will only belong to their primary group and the groups specified
+users_append_groups: true
+
+# -----------------------------------------------------------------------------
+# 3. Password Generation Settings
+# -----------------------------------------------------------------------------
+# Configuration for secure password generation functionality
+
+# Whether to automatically generate random passwords for new users
+# When true, users without an explicit password will get a random one
+# When false, users without an explicit password will have no password set
+users_generate_password: true
+
+# Length of generated passwords
+# Longer passwords provide better security (16+ recommended)
+users_password_length: 16
+
+# Path to store generated passwords
+# If provided, generated passwords will be stored in this file
+# File will have restricted permissions (0600) and be owned by root
+# For security, leave empty ("") to avoid storing passwords on disk
+users_password_store_path: ""
+
+# -----------------------------------------------------------------------------
+# 4. SSH Key Management
+# -----------------------------------------------------------------------------
+# Configuration for SSH authorized keys management
+
+# Whether to manage SSH authorized keys for users
+# When true, the role will create .ssh directories and manage authorized_keys files
+users_manage_ssh_keys: false
+
+# Default SSH key type for reference
+# Used in documentation and examples (doesn't affect existing keys)
+users_ssh_key_type: "ed25519"
+
+# Default key size for RSA keys
+# Note: ED25519 keys always use 256 bits (recommended over RSA)
+# Options: 1024, 2048, 4096 (higher is more secure but slower)
+users_ssh_key_bits: 4096
+
+# -----------------------------------------------------------------------------
+# 5. User Definitions
+# -----------------------------------------------------------------------------
+# Dictionary of users to create/manage
+# Keys are usernames, values are user attributes
+# Example:
+# users_dict:
+#   admin:
+#     comment: "System Administrator"
+#     uid: 1000
+#     groups: ["wheel", "sudo"]
+#     shell: "/bin/bash"
+#     password: "SecurePassword123"  # Will be hashed automatically
+#     ssh_keys:
+#       - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKu/xxxxxxxxxx user@host"
+#     expires: "2025-12-31"
+#
+#   webuser:
+#     comment: "Web Application User"
+#     system: true
+#     home: "/var/www"
+#     shell: "/bin/false"
+#
+#   developer:
+#     comment: "Developer Account"
+#     groups: ["developers", "docker"]
+#     append: true  # Add to groups without replacing existing
+#     password_expire_min: 7  # Minimum password age in days
+#     password_expire_max: 60  # Maximum password age in days
+users_dict: {}
+
+# Dictionary of users to remove
+# Keys are usernames, values are removal options
+# Example:
+# users_remove_dict:
+#   olduser:
+#     remove_home: true  # Delete home directory
+#     force: true  # Force removal even if user is logged in
+#
+#   tempuser:
+#     remove_home: false  # Keep home directory
+#
+#   retired:
+#     # Empty dict uses default settings from users_remove_home
+users_remove_dict: {}

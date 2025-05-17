@@ -1,0 +1,74 @@
+---
+# =============================================================================
+# Ansible Role: Users - Main Tasks
+# =============================================================================
+# This is the main task file for the Users role. It orchestrates the execution
+# of all role components in the correct order. Each task is tagged appropriately
+# to allow for selective execution.
+#
+# Flow:
+# 1. Load OS-specific variables (if any)
+# 2. Validate role variables
+# 3. User account creation
+# 4. User account removal
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# 1. OS-Specific Variables
+# -----------------------------------------------------------------------------
+- name: Users | include_vars | Gather OS specific variables
+  ansible.builtin.include_vars: "{{ lookup('first_found', params) }}"
+  vars:
+    params:
+      files:
+        - "{{ ansible_facts['distribution'] | lower }}_{{ ansible_facts['distribution_version'] | lower }}.yml"
+        - "{{ ansible_facts['distribution'] | lower }}_{{ ansible_facts['distribution_major_version'] | lower }}.yml"
+        - "{{ ansible_facts['distribution'] | lower }}.yml"
+        - "{{ ansible_facts['os_family'] | lower }}_{{ ansible_facts['distribution_version'] | lower }}.yml"
+        - "{{ ansible_facts['os_family'] | lower }}_{{ ansible_facts['distribution_major_version'].split('.')[0] }}.yml"
+        - "{{ ansible_facts['os_family'] | lower }}.yml"
+        - "main.yml"
+      paths:
+        - "{{ role_path }}/vars"
+  tags:
+    - always
+    - setup
+    - init
+
+# -----------------------------------------------------------------------------
+# 2. Variable Validation
+# -----------------------------------------------------------------------------
+- name: Users | assert | Validate role variables and requirements
+  ansible.builtin.import_tasks: assert.yml
+  run_once: true
+  delegate_to: localhost
+  tags:
+    - always
+    - validate
+    - check
+
+# -----------------------------------------------------------------------------
+# 3. User Account Creation
+# -----------------------------------------------------------------------------
+- name: Users | create | Create and configure user accounts
+  ansible.builtin.include_tasks: create.yml
+  when: >
+    users_role_action in ['all', 'create'] and
+    users_dict | length > 0
+  tags:
+    - create
+    - users
+    - setup
+
+# -----------------------------------------------------------------------------
+# 4. User Account Removal
+# -----------------------------------------------------------------------------
+- name: Users | remove | Remove user accounts
+  ansible.builtin.include_tasks: remove.yml
+  when: >
+    users_role_action in ['all', 'remove'] and
+    users_remove_dict | length > 0
+  tags:
+    - remove
+    - users
+    - cleanup

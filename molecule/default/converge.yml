@@ -1,0 +1,102 @@
+# =============================================================================
+# Ansible Role: Users - Molecule Convergence Playbook
+# =============================================================================
+# This playbook executes the main role functionality in the test environment.
+# It performs the following steps:
+# - Updates package repositories
+# - Ensures system readiness
+# - Executes the Users role with test configuration
+#
+# Flow:
+# 1. Update package cache
+# 2. Wait for system initialization
+# 3. Apply Users role with test variables
+# =============================================================================
+
+---
+# -----------------------------------------------------------------------------
+# 1. Pre-Tasks Setup
+# -----------------------------------------------------------------------------
+- name: molecule | Converge
+  hosts: all
+
+  pre_tasks:
+    # Package Cache Update
+    - name: Converge | Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 600
+      changed_when: false
+      when: >
+        ansible_os_family == "Debian"
+
+    - name: Converge | Update dnf cache
+      ansible.builtin.dnf:
+        update_cache: true
+      changed_when: false
+      when: >
+        ansible_os_family == "RedHat"
+
+    # System Initialization
+    - name: Converge | Wait for systemd to complete initialization
+      command: systemctl is-system-running
+      register: systemctl_status
+      until: >
+        'running' in systemctl_status.stdout or
+        'degraded' in systemctl_status.stdout
+      retries: 30
+      delay: 5
+      when: >
+        ansible_service_mgr == 'systemd'
+      changed_when: false
+      failed_when: systemctl_status.rc > 1
+
+# -----------------------------------------------------------------------------
+# 2. Role Execution with Test Variables
+# -----------------------------------------------------------------------------
+  vars:
+    # Test configuration for Users role
+    users_create_home: true
+    users_remove_home: true
+    users_default_shell: "/bin/bash"
+    users_create_group: true
+    users_default_groups: ["testgroup"]
+    users_append_groups: true
+    users_generate_password: true
+    users_password_length: 16
+    users_manage_ssh_keys: true
+
+    # Test user definitions
+    users_dict:
+      testuser1:
+        comment: "Test User 1"
+        uid: 2001
+        groups: ["developers"]
+        password: "Test123Password"
+        ssh_keys:
+          - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJVnvT4/XjbXVnF6WEyWgUUwpVS9RJYVDCl0b0z3wuNO molecule-test-key"
+
+      testuser2:
+        comment: "Test User 2"
+        uid: 2002
+        system: true
+        shell: "/bin/false"
+        home: "/opt/testuser2"
+
+      testuser3:
+        comment: "Test User 3"
+        uid: 2003
+        password_expire_min: 7
+        password_expire_max: 60
+
+  tasks:
+    # First create a user that we'll test removing later
+    - name: Converge | Create test removal user
+      ansible.builtin.user:
+        name: testuser_remove
+        comment: "Test Remove User"
+        state: present
+        createhome: true
+
+  roles:
+    - role: grzegorzfranus.users

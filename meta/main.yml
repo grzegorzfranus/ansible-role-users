@@ -1,0 +1,55 @@
+---
+galaxy_info:
+  role_name: users
+  author: Grzegorz Franus
+  namespace: grzegorzfranus
+  description: >
+    Ansible role for managing user accounts with secure password generation and SSH key support.
+  license: Apache-2.0
+  company: EWARE
+  min_ansible_version: "2.15"
+
+  platforms:
+    - name: Debian
+      versions:
+        - "bookworm"
+        - "bullseye"
+      galaxy_tags:
+        - debian
+        - debian12
+        - debian11
+    - name: Ubuntu
+      versions:
+        - "noble"
+        - "jammy"
+      galaxy_tags:
+        - ubuntu
+        - ubuntu24
+        - ubuntu22
+    - name: Rocky
+      versions:
+        - "9.0"
+      galaxy_tags:
+        - rocky
+        - rocky9
+    - name: EL
+      versions:
+        - "9"
+        - "8"
+      galaxy_tags:
+        - rhel
+        - rhel9
+        - rhel8
+        - centos
+        - centos9
+        - centos8
+
+  galaxy_tags:
+    - users
+    - accounts
+    - management
+    - system
+    - authentication
+    - usermanagement
+
+dependencies: []

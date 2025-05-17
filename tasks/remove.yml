@@ -1,0 +1,47 @@
+---
+# =============================================================================
+# Ansible Role: Users - User Removal Tasks
+# =============================================================================
+# This file handles the removal of users from the target system.
+#
+# Flow:
+# 1. Convert Dictionary to List with Username
+# 2. User Account Removal
+# 3. User Group Removal
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# 1. Convert Dictionary to List with Username
+# -----------------------------------------------------------------------------
+- name: Users | remove | Convert users removal dictionary to list
+  ansible.builtin.set_fact:
+    users_remove_list: "{{ users_remove_list | default([]) + [{'name': username} | combine(user_data if user_data else {})] }}"
+  loop: "{{ users_remove_dict | dict2items }}"
+  vars:
+    username: "{{ item.key }}"
+    user_data: "{{ item.value }}"
+  when: >
+    users_remove_dict is defined and users_remove_dict | length > 0
+
+# -----------------------------------------------------------------------------
+# 2. User Account Removal
+# -----------------------------------------------------------------------------
+- name: Users | remove | Remove user accounts
+  ansible.builtin.user:
+    name: "{{ item.name }}"
+    state: absent
+    remove: "{{ item.remove_home | default(users_remove_home) }}"
+    force: "{{ item.force | default(false) }}"
+  become: true
+  with_items: "{{ users_remove_list }}"
+
+# -----------------------------------------------------------------------------
+# 3. User Group Removal
+# -----------------------------------------------------------------------------
+- name: Users | remove | Remove user groups
+  ansible.builtin.group:
+    name: "{{ item.group | default(item.name) }}"
+    state: absent
+  become: true
+  with_items: "{{ users_remove_list }}"
+  when: users_create_group | bool

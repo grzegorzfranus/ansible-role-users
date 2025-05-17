@@ -1,0 +1,77 @@
+---
+# =============================================================================
+# Ansible Role: Users - Common Variables
+# =============================================================================
+# This file defines common variables shared across all distributions.
+# These values are distribution-agnostic and apply to all supported systems.
+#
+# Sections:
+#   1. System Paths
+#   2. Password Generation Variables
+#   3. Authentication Configuration
+#   4. Command Settings
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# 1. System Paths
+# -----------------------------------------------------------------------------
+# Base directory for regular user home directories
+# This path is standard across most Linux distributions
+users_home_base: "/home"
+
+# Base directory for system user home directories
+# Used for system users when a home directory is specified
+users_system_home_base: "/var/lib"
+
+# Path to SSH directory within user home directory
+# This is relative to the user's home directory
+users_ssh_directory: ".ssh"
+
+# Path to authorized_keys file (relative to user's home directory)
+# This is standard across OpenSSH implementations
+users_ssh_authorized_keys_file: ".ssh/authorized_keys"
+
+# Default permissions for SSH directory
+# 0700 ensures only the user can access their SSH directory
+users_ssh_directory_mode: "0700"
+
+# Default permissions for authorized_keys file
+# 0600 ensures only the user can read/write their keys
+users_ssh_authorized_keys_mode: "0600"
+
+# -----------------------------------------------------------------------------
+# 2. Password Generation Variables
+# -----------------------------------------------------------------------------
+# Character set used for password generation
+# Includes lowercase, uppercase, numbers, and special characters
+# This provides good entropy for secure password generation
+users_password_chars: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()-_=+[]{}|;:,.<>?"
+
+# Default password hashing algorithm
+# SHA-512 is secure and widely supported on modern Linux systems
+users_password_hash_algorithm: "sha512"
+
+# -----------------------------------------------------------------------------
+# 3. Authentication Configuration
+# -----------------------------------------------------------------------------
+# Path to system-wide PAM configuration directory
+# This is standard across most Linux distributions
+users_pam_config_dir: "/etc/pam.d"
+
+# Path to system-wide login.defs file for shadow password suite
+# Contains default settings for user passwords and expiration
+users_login_defs_path: "/etc/login.defs"
+
+# -----------------------------------------------------------------------------
+# 4. Command Settings
+# -----------------------------------------------------------------------------
+# Command used to set account expiration date
+# chage is part of the shadow-utils package and available on all Linux systems
+users_chage_command: "chage"
+
+# Command used to lock user accounts
+# usermod is standard across Linux distributions
+users_lock_command: "usermod --lock"
+
+# Command used to unlock user accounts
+users_unlock_command: "usermod --unlock"
