@@ -11,8 +11,7 @@
 # 2. User Default Configuration
 # 3. Password Generation Settings
 # 4. SSH Key Management
-# 5. System Paths and Common Settings
-# 6. User Dictionaries
+# 5. User Dictionaries
 # =============================================================================
 
 # -----------------------------------------------------------------------------
@@ -110,12 +109,35 @@
     quiet: true
     fail_msg: "users_password_length must be a number >= 8"
 
-- name: Users | assert | Validate password store path parameter
+- name: Users | assert | Validate password store filename parameter
   ansible.builtin.assert:
     that:
-      - users_password_store_path is defined
+      - users_password_store_file_name is defined
     quiet: true
-    fail_msg: "users_password_store_path must be defined (can be empty string)"
+    fail_msg: "users_password_store_file_name must be defined"
+
+- name: Users | assert | Validate password store controller parameter
+  ansible.builtin.assert:
+    that:
+      - users_store_passwords_controller is defined
+      - users_store_passwords_controller is boolean
+    quiet: true
+    fail_msg: "users_store_passwords_controller must be a boolean (true/false)"
+
+- name: Users | assert | Validate password store remote path parameter
+  ansible.builtin.assert:
+    that:
+      - users_password_store_remote_path is defined
+    quiet: true
+    fail_msg: "users_password_store_remote_path must be defined (can be empty string)"
+
+- name: Users | assert | Validate password store remote parameter
+  ansible.builtin.assert:
+    that:
+      - users_store_passwords_remote is defined
+      - users_store_passwords_remote is boolean
+    quiet: true
+    fail_msg: "users_store_passwords_remote must be a boolean (true/false)"
 
 - name: Users | assert | Validate password chars parameter
   ansible.builtin.assert:
@@ -164,110 +186,22 @@
     quiet: true
     fail_msg: "users_ssh_key_bits must be one of: 1024, 2048, 4096"
 
-# -----------------------------------------------------------------------------
-# 5. System Paths and Common Settings
-# -----------------------------------------------------------------------------
-- name: Users | assert | Validate home base path
+- name: Users | assert | Validate SSH directory settings
   ansible.builtin.assert:
     that:
-      - users_home_base is defined
-      - users_home_base is string
-      - users_home_base | length > 0
-    quiet: true
-    fail_msg: "users_home_base must be a non-empty string"
-
-- name: Users | assert | Validate system home base path
-  ansible.builtin.assert:
-    that:
-      - users_system_home_base is defined
-      - users_system_home_base is string
-      - users_system_home_base | length > 0
-    quiet: true
-    fail_msg: "users_system_home_base must be a non-empty string"
-
-- name: Users | assert | Validate SSH directory path
-  ansible.builtin.assert:
-    that:
-      - users_ssh_directory is defined
+      - users_ssh_directory is defined 
       - users_ssh_directory is string
-      - users_ssh_directory | length > 0
-    quiet: true
-    fail_msg: "users_ssh_directory must be a non-empty string"
-
-- name: Users | assert | Validate SSH authorized keys file
-  ansible.builtin.assert:
-    that:
       - users_ssh_authorized_keys_file is defined
       - users_ssh_authorized_keys_file is string
-      - users_ssh_authorized_keys_file | length > 0
-    quiet: true
-    fail_msg: "users_ssh_authorized_keys_file must be a non-empty string"
-
-- name: Users | assert | Validate SSH directory mode
-  ansible.builtin.assert:
-    that:
       - users_ssh_directory_mode is defined
       - users_ssh_directory_mode is string
-      - users_ssh_directory_mode | length > 0
-    quiet: true
-    fail_msg: "users_ssh_directory_mode must be a non-empty string"
-
-- name: Users | assert | Validate authorized keys file mode
-  ansible.builtin.assert:
-    that:
-      - users_ssh_authorized_keys_mode is defined
+      - users_ssh_authorized_keys_mode is defined 
       - users_ssh_authorized_keys_mode is string
-      - users_ssh_authorized_keys_mode | length > 0
     quiet: true
-    fail_msg: "users_ssh_authorized_keys_mode must be a non-empty string"
-
-- name: Users | assert | Validate PAM config directory
-  ansible.builtin.assert:
-    that:
-      - users_pam_config_dir is defined
-      - users_pam_config_dir is string
-      - users_pam_config_dir | length > 0
-    quiet: true
-    fail_msg: "users_pam_config_dir must be a non-empty string"
-
-- name: Users | assert | Validate login.defs path
-  ansible.builtin.assert:
-    that:
-      - users_login_defs_path is defined
-      - users_login_defs_path is string
-      - users_login_defs_path | length > 0
-    quiet: true
-    fail_msg: "users_login_defs_path must be a non-empty string"
-
-- name: Users | assert | Validate chage command
-  ansible.builtin.assert:
-    that:
-      - users_chage_command is defined
-      - users_chage_command is string
-      - users_chage_command | length > 0
-    quiet: true
-    fail_msg: "users_chage_command must be a non-empty string"
-
-- name: Users | assert | Validate lock command
-  ansible.builtin.assert:
-    that:
-      - users_lock_command is defined
-      - users_lock_command is string
-      - users_lock_command | length > 0
-    quiet: true
-    fail_msg: "users_lock_command must be a non-empty string"
-
-- name: Users | assert | Validate unlock command
-  ansible.builtin.assert:
-    that:
-      - users_unlock_command is defined
-      - users_unlock_command is string
-      - users_unlock_command | length > 0
-    quiet: true
-    fail_msg: "users_unlock_command must be a non-empty string"
+    fail_msg: "All SSH directory settings must be defined"
 
 # -----------------------------------------------------------------------------
-# 6. User Dictionaries
+# 5. User Dictionaries
 # -----------------------------------------------------------------------------
 - name: Users | assert | Validate users dictionary parameter
   ansible.builtin.assert:

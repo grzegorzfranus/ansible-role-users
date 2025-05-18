@@ -43,16 +43,37 @@
     item.password is not defined and
     item.state | default('present') == 'present'
 
-- name: Users | create | Store generated passwords to file
+- name: Users | create | Store generated passwords to file on Ansible controller
+  delegate_to: localhost
+  become: false
   ansible.builtin.copy:
     content: |
       # Generated Passwords - {{ ansible_date_time.iso8601 }}
+      # Host: {{ inventory_hostname }}
       {% for user in users_list %}
       {% if users_generated_passwords[user.name] is defined %}
       User: {{ user.name }} Password: {{ users_generated_passwords[user.name] }}
       {% endif %}
       {% endfor %}
-    dest: "{{ users_password_store_path }}"
+    dest: "{{ playbook_dir }}/{{ users_password_store_file_name }}"
+    mode: "0600"
+  no_log: true
+  when: >
+    users_generate_password | bool and
+    users_password_store_file_name != "" and
+    users_store_passwords_controller | bool
+
+- name: Users | create | Store generated passwords to file on remote host
+  ansible.builtin.copy:
+    content: |
+      # Generated Passwords - {{ ansible_date_time.iso8601 }}
+      # Host: {{ inventory_hostname }}
+      {% for user in users_list %}
+      {% if users_generated_passwords[user.name] is defined %}
+      User: {{ user.name }} Password: {{ users_generated_passwords[user.name] }}
+      {% endif %}
+      {% endfor %}
+    dest: "{{ users_password_store_remote_path }}_{{ inventory_hostname }}"
     owner: root
     group: root
     mode: "0600"
@@ -60,7 +81,8 @@
   no_log: true
   when: >
     users_generate_password | bool and
-    users_password_store_path != ""
+    users_password_store_remote_path != "" and
+    users_store_passwords_remote | bool
 
 # -----------------------------------------------------------------------------
 # 3. User Account Creation

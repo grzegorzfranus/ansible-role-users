@@ -81,7 +81,10 @@ This role already handles privilege escalation for tasks that require it. You ca
 |----------|-------------|---------|
 | `users_generate_password` | Generate random passwords for new users | `true` |
 | `users_password_length` | Length of generated passwords | `16` |
-| `users_password_store_path` | Path to store generated passwords (empty = don't store) | `""` |
+| `users_password_store_file_name` | Filename for storing passwords on Ansible controller | Template with hostname and timestamp |
+| `users_store_passwords_controller` | Whether to store passwords on Ansible controller | `false` |
+| `users_password_store_remote_path` | Path to store generated passwords on remote hosts | `""` |
+| `users_store_passwords_remote` | Whether to store passwords on remote hosts | `false` |
 | `users_password_chars` | Character set used for password generation | `"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()-_=+[]{}|;:,.<>?"` |
 | `users_password_hash_algorithm` | Password hashing algorithm (sha512, sha256, md5) | `"sha512"` |
 
@@ -153,21 +156,47 @@ This role implements several security best practices for password management:
 2. **Secure Hashing**: All passwords are hashed using SHA-512 with a random salt.
 3. **No Plain-Text Storage**: Generated passwords are not stored in variables longer than necessary.
 4. **No Logging**: Password operations use `no_log: true` to prevent password exposure in logs.
-5. **Optional Storage**: If you need to retrieve passwords, you can specify a secure path to store them, protected with strict permissions.
+5. **Flexible Storage Options**: Passwords can be stored on either the Ansible controller, remote hosts, or both.
 
 ## Retrieving Generated Passwords
 
-When `users_generate_password` is enabled and `users_password_store_path` is set, the role will store generated passwords in the specified file. This file will have strict permissions (0600) and will be owned by root.
+When `users_generate_password` is enabled, passwords can be stored in the following ways:
 
-For example with `users_password_store_path: "/root/user_passwords.txt"`, the generated passwords will be stored in that file with format:
+### On the Ansible Controller
+
+When `users_store_passwords_controller` is set to `true` and `users_password_store_file_name` is defined, passwords will be stored in a file in the playbook directory on the Ansible controller.
+
+By default, the filename includes the hostname and a timestamp to ensure uniqueness:
+```
+hostname_YYYY-MM-DD_HH-MM-SS
+```
+
+For example: `webserver1_2023-11-15_14-30-22`
+
+### On Remote Hosts
+
+When `users_store_passwords_remote` is set to `true` and `users_password_store_remote_path` is defined, passwords will be stored on each remote host. The filename will include the hostname: `{users_password_store_remote_path}_{hostname}`.
+
+### Password File Format
+
+All password files have the following format:
 
 ```
 # Generated Passwords - 2023-05-01T10:15:30Z
+# Host: server1.example.com
 User: johndoe Password: Tb8y6tG$jK2p!9Lm
 User: appuser Password: W4e@7Jh*zPq5$3xN
 ```
 
-For maximum security, you should retrieve this file, store it securely (e.g., in a password manager), and then delete it from the server.
+All password files have strict permissions (0600) and on remote hosts are owned by root.
+
+### Security Considerations
+
+For maximum security:
+- Use Ansible Vault to encrypt variables containing paths
+- Retrieve password files after user creation
+- Store them securely (e.g., in a password manager)
+- Delete them from both the Ansible controller and remote hosts
 
 ## Role Tags
 
@@ -236,26 +265,73 @@ ansible-playbook playbook.yml --skip-tags "remove,cleanup"
         tempuser: {}  # Use default settings
 ```
 
-### Complete Example with Dictionary Format
+### Basic Example with Password Storage in Current Directory
 
 ```yaml
 - hosts: all
   roles:
     - role: ansible-role-users
+      # Enable password storage on controller (using default filename with timestamp)
+      users_store_passwords_controller: true
+      
+      # Define users to create
+      users_dict:
+        admin:
+          comment: "System Administrator"
+          groups: ["sudo"]
+          
+        appuser:
+          comment: "Application User"
+          shell: "/bin/false"
+```
+
+### Example with Custom Password Filename
+
+```yaml
+- hosts: all
+  roles:
+    - role: ansible-role-users
+      # Enable password storage on controller with custom filename
+      users_store_passwords_controller: true
+      users_password_store_file_name: "passwords_{{ inventory_hostname }}.txt"
+      
+      # Define users to create
+      users_dict:
+        admin:
+          comment: "System Administrator"
+          groups: ["sudo"]
+```
+
+### Complete Example with Dictionary Format and Password Storage
+
+```yaml
+- hosts: all
+  roles:
+    - role: ansible-role-users
+      # User default settings
       users_create_home: true
-      users_remove_home: true
       users_default_shell: "/bin/bash"
       users_password_max_age: 90
       users_password_min_age: 7
       users_create_group: true
       users_default_groups: ["users"]
-      users_append_groups: true
+      
+      # Password generation and storage settings
       users_generate_password: true
       users_password_length: 16
-      users_password_store_path: "/root/user_passwords.txt"
-      users_manage_ssh_keys: true
-      users_ssh_key_type: "ed25519"
       
+      # Store passwords on Ansible controller with custom filename
+      users_store_passwords_controller: true
+      users_password_store_file_name: "users_{{ inventory_hostname }}_{{ ansible_date_time.date }}.txt"
+      
+      # Store passwords on remote hosts
+      users_store_passwords_remote: true
+      users_password_store_remote_path: "/root/local_passwords/user_passwords.txt"
+      
+      # SSH key management
+      users_manage_ssh_keys: true
+      
+      # Users to create
       users_dict:
         admin:
           comment: "System Administrator"
@@ -271,10 +347,10 @@ ansible-playbook playbook.yml --skip-tags "remove,cleanup"
           home: "/opt/app"
           shell: "/bin/false"
       
+      # Users to remove
       users_remove_dict:
         olduser:
           remove_home: true
-        tempuser: {}
 ```
 
 ### Example with All Available User Parameters

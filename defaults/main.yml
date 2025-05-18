@@ -71,11 +71,35 @@ users_generate_password: true
 # Longer passwords provide better security (16+ recommended)
 users_password_length: 16
 
-# Path to store generated passwords
+# Filename to store generated passwords on the Ansible controller
 # If provided, generated passwords will be stored in this file
+# File will have restricted permissions (0600)
+# Default is to use a filename with hostname and timestamp
+users_password_store_file_name: >-
+  passwords_{{ ansible_hostname }}_{{ ansible_date_time.year }}-{{ ansible_date_time.month }}-{{ ansible_date_time.day }}_
+  {{ ansible_date_time.hour }}-{{ ansible_date_time.minute }}-{{ ansible_date_time.second }}
+
+# Whether to store generated passwords on the Ansible controller
+# When true, passwords will be stored in the file specified by users_password_store_file_name
+users_store_passwords_controller: false
+
+# Path to store generated passwords on the remote hosts
+# If provided, generated passwords will be stored in this file on each target host
 # File will have restricted permissions (0600) and be owned by root
-# For security, leave empty ("") to avoid storing passwords on disk
-users_password_store_path: ""
+# For security, leave empty ("") to avoid storing passwords on remote hosts
+users_password_store_remote_path: ""
+
+# Whether to store generated passwords on the remote hosts
+# When true, passwords will be stored in the path specified by users_password_store_remote_path
+users_store_passwords_remote: false
+
+# Character set used for password generation
+# Defaults to a mix of uppercase, lowercase, numbers, and symbols
+users_password_chars: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()-_=+[]{}|;:,.<>?"
+
+# Password hash algorithm
+# Options: sha512 (most secure), sha256, md5 (least secure)
+users_password_hash_algorithm: "sha512"
 
 # -----------------------------------------------------------------------------
 # 4. SSH Key Management
@@ -94,6 +118,12 @@ users_ssh_key_type: "ed25519"
 # Note: ED25519 keys always use 256 bits (recommended over RSA)
 # Options: 1024, 2048, 4096 (higher is more secure but slower)
 users_ssh_key_bits: 4096
+
+# SSH directory settings
+users_ssh_directory: ".ssh"
+users_ssh_authorized_keys_file: ".ssh/authorized_keys"
+users_ssh_directory_mode: "0700"
+users_ssh_authorized_keys_mode: "0600"
 
 # -----------------------------------------------------------------------------
 # 5. User Definitions
