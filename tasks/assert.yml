@@ -189,13 +189,13 @@
 - name: Users | assert | Validate SSH directory settings
   ansible.builtin.assert:
     that:
-      - users_ssh_directory is defined 
+      - users_ssh_directory is defined
       - users_ssh_directory is string
       - users_ssh_authorized_keys_file is defined
       - users_ssh_authorized_keys_file is string
       - users_ssh_directory_mode is defined
       - users_ssh_directory_mode is string
-      - users_ssh_authorized_keys_mode is defined 
+      - users_ssh_authorized_keys_mode is defined
       - users_ssh_authorized_keys_mode is string
     quiet: true
     fail_msg: "All SSH directory settings must be defined"
