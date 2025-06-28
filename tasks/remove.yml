@@ -44,4 +44,5 @@
     state: absent
   become: true
   with_items: "{{ users_remove_list }}"
-  when: users_create_group | bool
+  when: >
+    users_create_group | bool

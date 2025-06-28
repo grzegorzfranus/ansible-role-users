@@ -1,12 +1,25 @@
 # Ansible Role: Users
 
-|Source|Version|CI|License|
+|Source|Version|Tests|License|
 |------|-------|-------|-------|
-|[![Source Code](https://img.shields.io/badge/source-github-blue.svg)](https://github.com/grzegorzfranus/ansible-role-users)|[![Version](https://img.shields.io/github/v/release/grzegorzfranus/ansible-role-users)](https://github.com/grzegorzfranus/ansible-role-users/releases)|[![tests](https://github.com/grzegorzfranus/ansible-role-users/actions/workflows/ci.yml/badge.svg)](https://github.com/grzegorzfranus/ansible-role-users/actions)|[![Repository License](https://img.shields.io/badge/license-apache2.0-brightgreen.svg)](LICENSE)|
+|[![Source Code](https://img.shields.io/badge/source-github-blue.svg)](https://github.com/grzegorzfranus/ansible-role-users)|[![Version](https://img.shields.io/github/v/release/grzegorzfranus/ansible-role-users)](https://github.com/grzegorzfranus/ansible-role-users/releases)|[![tests](https://github.com/grzegorzfranus/ansible-role-users/actions/workflows/test-and-validation.yml/badge.svg)](https://github.com/grzegorzfranus/ansible-role-users/actions)|[![Repository License](https://img.shields.io/badge/license-apache2.0-brightgreen.svg)](LICENSE)|
 
 This Ansible role manages user accounts on Linux systems. It provides capabilities for creating users with custom home directories, shells, comments, and other parameters. The role also includes secure password generation and optional SSH key management.
 
-## Main Actions
+## ✨ Features
+
+- 👥 **User Account Management**: Create, modify, and remove user accounts with full control
+- 🔐 **Secure Password Generation**: Cryptographically secure random password creation
+- 🔑 **SSH Key Management**: Automated SSH authorized_keys deployment and management
+- 🏠 **Home Directory Control**: Flexible home directory creation, customization, and cleanup
+- 👤 **User Profiles**: Complete user configuration including shell, groups, and permissions
+- 🛡️ **Password Policies**: Configurable password aging and expiration policies
+- 📊 **System Integration**: Seamless integration with system groups and permissions
+- 🔄 **Idempotent Operations**: Safe execution with no unintended changes on re-runs
+- 📝 **Comprehensive Logging**: Detailed operation logging with security-conscious output
+- 🚀 **CI/CD Integration**: Full Molecule test suite for automated testing
+
+## 🎯 Main Actions
 
 - Create and manage users with customizable parameters
 - Securely generate random passwords
@@ -14,7 +27,7 @@ This Ansible role manages user accounts on Linux systems. It provides capabiliti
 - Set password expiration policies
 - Remove users with optional home directory removal
 
-## Requirements
+## 📋 Requirements
 
 ### Supported operating systems
 List of officially supported operating systems:
@@ -54,7 +67,7 @@ This role already handles privilege escalation for tasks that require it. You ca
     - role: ansible-role-users
 ```
 
-## Role Variables
+## ⚙️ Role Variables
 
 ### General Settings
 
@@ -119,7 +132,7 @@ This role already handles privilege escalation for tasks that require it. You ca
 | `users_dict` | Dictionary of users to create/manage | `{}` |
 | `users_remove_dict` | Dictionary of users to remove | `{}` |
 
-## User Parameters
+## 👤 User Parameters
 
 Each user in the `users_dict` can have the following parameters:
 
@@ -148,7 +161,7 @@ Each user in the `users_dict` can have the following parameters:
 | `no_log` | Whether to suppress logging of task | `true` |
 | `password_length` | Custom length for generated password | `users_password_length` |
 
-## Secure Password Management
+## 🔐 Secure Password Management
 
 This role implements several security best practices for password management:
 
@@ -158,7 +171,7 @@ This role implements several security best practices for password management:
 4. **No Logging**: Password operations use `no_log: true` to prevent password exposure in logs.
 5. **Flexible Storage Options**: Passwords can be stored on either the Ansible controller, remote hosts, or both.
 
-## Retrieving Generated Passwords
+## 📝 Retrieving Generated Passwords
 
 When `users_generate_password` is enabled, passwords can be stored in the following ways:
 
@@ -198,7 +211,7 @@ For maximum security:
 - Store them securely (e.g., in a password manager)
 - Delete them from both the Ansible controller and remote hosts
 
-## Role Tags
+## 🏷️ Role Tags
 
 The role uses the following tags for task selection:
 
@@ -224,7 +237,7 @@ ansible-playbook playbook.yml --tags "create"
 ansible-playbook playbook.yml --skip-tags "remove,cleanup"
 ```
 
-## Example Playbooks
+## 📖 Example Playbooks
 
 ### Creating Users with Dictionary Format
 
@@ -400,15 +413,115 @@ ansible-playbook playbook.yml --skip-tags "remove,cleanup"
           password_length: 20              # Custom length for generated password
 ```
 
-## License
+### 🧪 Test & Validation Pipeline
+- **Workflow**: `.github/workflows/test-and-validation.yml`
+- **Name**: `🧪 Test & Validation Pipeline`
+- **Purpose**: Automated testing using Molecule across multiple distributions
+- **Triggers**: Push to main branch, pull requests to main/feature/release/bugfix/hotfix branches
 
-Apache-2.0
+### 📦 Galaxy Publishing
+- **Workflow**: `.github/workflows/publish-to-galaxy.yml`
+- **Name**: `📦 Publish to Ansible Galaxy`
+- **Purpose**: Automated role publishing to Ansible Galaxy
+- **Triggers**: Tagged releases (v*)
 
-## Author Information
+## 🛡️ Security Features
 
-This role was created by [Grzegorz Franus](https://github.com/grzegorzfranus).
+- ✅ **Secure Password Hashing**: SHA-512 with cryptographically secure random salts
+- ✅ **No Plain-Text Storage**: Generated passwords are never stored in plain text
+- ✅ **Controlled Logging**: Sensitive operations use `no_log: true` to prevent exposure
+- ✅ **Privilege Escalation**: Secure sudo handling for user management operations
+- ✅ **SSH Key Validation**: Proper SSH key format validation and secure deployment
+- ✅ **Home Directory Permissions**: Secure default permissions for user home directories
+- ✅ **Password Policies**: Configurable aging policies to enforce password rotation
+- ✅ **Account Expiration**: Support for time-based account expiration
+- ✅ **Group Management**: Secure group membership and permission assignment
+- ✅ **Audit Trail**: Comprehensive logging for security compliance and troubleshooting
 
-## Contributing
+### Enhanced Security Configuration
+
+```yaml
+# Enable secure password generation with strong policies
+users_generate_password: true
+users_password_length: 20
+users_password_hash_algorithm: "sha512"
+users_password_max_age: 60
+users_password_min_age: 7
+
+# SSH key management with secure defaults
+users_manage_ssh_keys: true
+users_ssh_key_type: "ed25519"
+users_ssh_directory_mode: "0700"
+users_ssh_authorized_keys_mode: "0600"
+
+# Secure password storage (choose one approach)
+users_store_passwords_controller: false  # Don't store on controller
+users_store_passwords_remote: false      # Don't store on remote hosts
+```
+
+## 🔍 Verification
+
+After deployment, verify the user management operations completed successfully:
+
+### Check User Account Status
+
+```bash
+# Verify user was created
+id username
+
+# Check user's groups
+groups username
+
+# Verify user's shell
+getent passwd username | cut -d: -f7
+
+# Check password aging policy
+chage -l username
+
+# Verify home directory permissions
+ls -la /home/username
+```
+
+### Verify SSH Key Configuration
+
+```bash
+# Check SSH directory permissions
+ls -la /home/username/.ssh/
+
+# Verify authorized_keys file
+cat /home/username/.ssh/authorized_keys
+
+# Test SSH key authentication (from another host)
+ssh -i private_key username@hostname
+```
+
+### Check Password Generation
+
+```bash
+# If passwords stored on remote host
+sudo cat /path/to/password/file
+
+# If passwords stored on controller
+cat local_password_file.txt
+
+# Verify password hash in shadow file
+sudo grep username /etc/shadow
+```
+
+### Verify User Removal
+
+```bash
+# Check user no longer exists
+id removed_username 2>/dev/null || echo "User successfully removed"
+
+# Verify home directory was removed (if configured)
+ls -la /home/removed_username 2>/dev/null || echo "Home directory successfully removed"
+
+# Check user's group was removed (if it was a unique group)
+getent group removed_username 2>/dev/null || echo "User group successfully removed"
+```
+
+## 🤝 Contributing
 
 Contributions, bug reports, and feature requests are welcome!
 
@@ -419,3 +532,11 @@ Contributions, bug reports, and feature requests are welcome!
 - For major changes, please open an issue first to discuss what you would like to change.
 
 If you have questions or suggestions, feel free to open an issue or contact the author via GitHub.
+
+## 📝 License
+
+This project is licensed under the Apache-2.0 License - see the LICENSE file for details.
+
+## 👥 Author Information
+
+This role was created by [Grzegorz Franus](https://github.com/grzegorzfranus).

@@ -16,7 +16,7 @@
 # -----------------------------------------------------------------------------
 # 1. OS-Specific Variables
 # -----------------------------------------------------------------------------
-- name: Users | include_vars | Gather OS specific variables
+- name: 🔧 Users | include_vars | Gather OS specific variables
   ansible.builtin.include_vars: "{{ lookup('first_found', params) }}"
   vars:
     params:
@@ -38,7 +38,7 @@
 # -----------------------------------------------------------------------------
 # 2. Variable Validation
 # -----------------------------------------------------------------------------
-- name: Users | assert | Validate role variables and requirements
+- name: 🧪 Users | assert | Validate role variables and requirements
   ansible.builtin.import_tasks: assert.yml
   run_once: true
   delegate_to: localhost
@@ -50,7 +50,7 @@
 # -----------------------------------------------------------------------------
 # 3. User Account Creation
 # -----------------------------------------------------------------------------
-- name: Users | create | Create and configure user accounts
+- name: 👥 Users | create | Create and configure user accounts
   ansible.builtin.include_tasks: create.yml
   when: >
     users_role_action in ['all', 'create'] and
@@ -63,7 +63,7 @@
 # -----------------------------------------------------------------------------
 # 4. User Account Removal
 # -----------------------------------------------------------------------------
-- name: Users | remove | Remove user accounts
+- name: 🗑️ Users | remove | Remove user accounts
   ansible.builtin.include_tasks: remove.yml
   when: >
     users_role_action in ['all', 'remove'] and

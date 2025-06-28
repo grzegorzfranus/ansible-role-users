@@ -1,10 +1,10 @@
 ---
 # =============================================================================
-# Ansible Role: Users - Assertions
+# Ansible Role: Users - Variable Assertions
 # =============================================================================
-# This file contains assertions to validate all role variables before execution.
-# These checks ensure that the provided variable values are of the correct type
-# and within valid ranges/options, preventing runtime errors.
+# This file contains assertions to validate all variables used in the role.
+# Each assertion ensures that variables are defined and have correct types/values.
+# These validations help prevent configuration errors and ensure secure defaults.
 #
 # Flow:
 # 1. General Settings
@@ -17,43 +17,43 @@
 # -----------------------------------------------------------------------------
 # 1. General Settings
 # -----------------------------------------------------------------------------
-- name: Users | assert | Validate role action parameter
+- name: 🧪 Users | assert | Validate role action parameter
   ansible.builtin.assert:
     that:
       - users_role_action is defined
       - users_role_action is string
       - users_role_action in [ "all", "create", "remove" ]
-    quiet: true
-    fail_msg: "users_role_action must be one of: all, create, remove"
+    fail_msg: "❌ Invalid role action '{{ users_role_action | default('undefined') }}'. Must be one of: all, create, remove"
+    success_msg: "✅ Role action parameter is valid: {{ users_role_action }}"
 
-- name: Users | assert | Validate home creation parameter
+- name: 🧪 Users | assert | Validate home creation parameter
   ansible.builtin.assert:
     that:
       - users_create_home is defined
       - users_create_home is boolean
-    quiet: true
-    fail_msg: "users_create_home must be a boolean (true/false)"
+    fail_msg: "❌ Invalid home creation setting '{{ users_create_home | default('undefined') }}'. Must be boolean (true/false)"
+    success_msg: "✅ Home creation setting is valid: {{ users_create_home }}"
 
-- name: Users | assert | Validate home removal parameter
+- name: 🧪 Users | assert | Validate home removal parameter
   ansible.builtin.assert:
     that:
       - users_remove_home is defined
       - users_remove_home is boolean
-    quiet: true
-    fail_msg: "users_remove_home must be a boolean (true/false)"
+    fail_msg: "❌ Invalid home removal setting '{{ users_remove_home | default('undefined') }}'. Must be boolean (true/false)"
+    success_msg: "✅ Home removal setting is valid: {{ users_remove_home }}"
 
 # -----------------------------------------------------------------------------
 # 2. User Default Configuration
 # -----------------------------------------------------------------------------
-- name: Users | assert | Validate default shell parameter
+- name: 🧪 Users | assert | Validate default shell parameter
   ansible.builtin.assert:
     that:
       - users_default_shell is defined
       - users_default_shell is string
-    quiet: true
-    fail_msg: "users_default_shell must be a string"
+    fail_msg: "❌ Invalid default shell '{{ users_default_shell | default('undefined') }}'. Must be a valid shell path string (e.g., /bin/bash)"
+    success_msg: "✅ Default shell is valid: {{ users_default_shell }}"
 
-- name: Users | assert | Validate password age parameters
+- name: 🧪 Users | assert | Validate password age parameters
   ansible.builtin.assert:
     that:
       - users_password_max_age is defined
@@ -62,131 +62,131 @@
       - users_password_min_age is number
       - users_password_min_age >= 0
       - users_password_max_age >= users_password_min_age
-    quiet: true
-    fail_msg: "Password age parameters must be valid numbers and max_age must be >= min_age"
+    fail_msg: "❌ Invalid password age parameters. Min: {{ users_password_min_age | default('undefined') }}, Max: {{ users_password_max_age | default('undefined') }}. Must be numbers with max_age >= min_age >= 0"
+    success_msg: "✅ Password age parameters are valid: min={{ users_password_min_age }} days, max={{ users_password_max_age }} days"
 
-- name: Users | assert | Validate group creation parameter
+- name: 🧪 Users | assert | Validate group creation parameter
   ansible.builtin.assert:
     that:
       - users_create_group is defined
       - users_create_group is boolean
-    quiet: true
-    fail_msg: "users_create_group must be a boolean (true/false)"
+    fail_msg: "❌ Invalid group creation setting '{{ users_create_group | default('undefined') }}'. Must be boolean (true/false)"
+    success_msg: "✅ Group creation setting is valid: {{ users_create_group }}"
 
-- name: Users | assert | Validate default groups parameter
+- name: 🧪 Users | assert | Validate default groups parameter
   ansible.builtin.assert:
     that:
       - users_default_groups is defined
       - users_default_groups is sequence
-    quiet: true
-    fail_msg: "users_default_groups must be a list"
+    fail_msg: "❌ Invalid default groups '{{ users_default_groups | default('undefined') }}'. Must be a list of group names"
+    success_msg: "✅ Default groups are valid with {{ users_default_groups | length }} groups: {{ users_default_groups | join(', ') }}"
 
-- name: Users | assert | Validate group append parameter
+- name: 🧪 Users | assert | Validate group append parameter
   ansible.builtin.assert:
     that:
       - users_append_groups is defined
       - users_append_groups is boolean
-    quiet: true
-    fail_msg: "users_append_groups must be a boolean (true/false)"
+    fail_msg: "❌ Invalid group append setting '{{ users_append_groups | default('undefined') }}'. Must be boolean (true/false)"
+    success_msg: "✅ Group append setting is valid: {{ users_append_groups }}"
 
 # -----------------------------------------------------------------------------
 # 3. Password Generation Settings
 # -----------------------------------------------------------------------------
-- name: Users | assert | Validate password generation parameter
+- name: 🧪 Users | assert | Validate password generation parameter
   ansible.builtin.assert:
     that:
       - users_generate_password is defined
       - users_generate_password is boolean
-    quiet: true
-    fail_msg: "users_generate_password must be a boolean (true/false)"
+    fail_msg: "❌ Invalid password generation setting '{{ users_generate_password | default('undefined') }}'. Must be boolean (true/false)"
+    success_msg: "✅ Password generation setting is valid: {{ users_generate_password }}"
 
-- name: Users | assert | Validate password length parameter
+- name: 🧪 Users | assert | Validate password length parameter
   ansible.builtin.assert:
     that:
       - users_password_length is defined
       - users_password_length is number
       - users_password_length >= 8
-    quiet: true
-    fail_msg: "users_password_length must be a number >= 8"
+    fail_msg: "❌ Invalid password length '{{ users_password_length | default('undefined') }}'. Must be a number >= 8 characters for security"
+    success_msg: "✅ Password length is valid: {{ users_password_length }} characters"
 
-- name: Users | assert | Validate password store filename parameter
+- name: 🧪 Users | assert | Validate password store filename parameter
   ansible.builtin.assert:
     that:
       - users_password_store_file_name is defined
-    quiet: true
-    fail_msg: "users_password_store_file_name must be defined"
+    fail_msg: "❌ Password store filename is not defined. Must be specified (can be empty string to disable file storage)"
+    success_msg: "✅ Password store filename is defined: {{ users_password_store_file_name if users_password_store_file_name != '' else '(disabled)' }}"
 
-- name: Users | assert | Validate password store controller parameter
+- name: 🧪 Users | assert | Validate password store controller parameter
   ansible.builtin.assert:
     that:
       - users_store_passwords_controller is defined
       - users_store_passwords_controller is boolean
-    quiet: true
-    fail_msg: "users_store_passwords_controller must be a boolean (true/false)"
+    fail_msg: "❌ Invalid password store controller setting '{{ users_store_passwords_controller | default('undefined') }}'. Must be boolean (true/false)"
+    success_msg: "✅ Password store controller setting is valid: {{ users_store_passwords_controller }}"
 
-- name: Users | assert | Validate password store remote path parameter
+- name: 🧪 Users | assert | Validate password store remote path parameter
   ansible.builtin.assert:
     that:
       - users_password_store_remote_path is defined
-    quiet: true
-    fail_msg: "users_password_store_remote_path must be defined (can be empty string)"
+    fail_msg: "❌ Password store remote path is not defined. Must be specified (can be empty string to disable remote storage)"
+    success_msg: "✅ Password store remote path is defined: {{ users_password_store_remote_path if users_password_store_remote_path != '' else '(disabled)' }}"
 
-- name: Users | assert | Validate password store remote parameter
+- name: 🧪 Users | assert | Validate password store remote parameter
   ansible.builtin.assert:
     that:
       - users_store_passwords_remote is defined
       - users_store_passwords_remote is boolean
-    quiet: true
-    fail_msg: "users_store_passwords_remote must be a boolean (true/false)"
+    fail_msg: "❌ Invalid password store remote setting '{{ users_store_passwords_remote | default('undefined') }}'. Must be boolean (true/false)"
+    success_msg: "✅ Password store remote setting is valid: {{ users_store_passwords_remote }}"
 
-- name: Users | assert | Validate password chars parameter
+- name: 🧪 Users | assert | Validate password chars parameter
   ansible.builtin.assert:
     that:
       - users_password_chars is defined
       - users_password_chars is string
       - users_password_chars | length >= 10
-    quiet: true
-    fail_msg: "users_password_chars must be a string with at least 10 characters"
+    fail_msg: "❌ Invalid password characters '{{ users_password_chars | default('undefined') }}'. Must be a string with at least 10 characters for sufficient complexity"
+    success_msg: "✅ Password characters are valid with {{ users_password_chars | length }} character types defined"
 
-- name: Users | assert | Validate password hash algorithm
+- name: 🧪 Users | assert | Validate password hash algorithm
   ansible.builtin.assert:
     that:
       - users_password_hash_algorithm is defined
       - users_password_hash_algorithm is string
       - users_password_hash_algorithm in ["sha512", "sha256", "md5"]
-    quiet: true
-    fail_msg: "users_password_hash_algorithm must be one of: sha512, sha256, md5 (sha512 recommended)"
+    fail_msg: "❌ Invalid password hash algorithm '{{ users_password_hash_algorithm | default('undefined') }}'. Must be one of: sha512 (recommended), sha256, md5"
+    success_msg: "✅ Password hash algorithm is valid: {{ users_password_hash_algorithm }}"
 
 # -----------------------------------------------------------------------------
 # 4. SSH Key Management
 # -----------------------------------------------------------------------------
-- name: Users | assert | Validate SSH key management parameter
+- name: 🧪 Users | assert | Validate SSH key management parameter
   ansible.builtin.assert:
     that:
       - users_manage_ssh_keys is defined
       - users_manage_ssh_keys is boolean
-    quiet: true
-    fail_msg: "users_manage_ssh_keys must be a boolean (true/false)"
+    fail_msg: "❌ Invalid SSH key management setting '{{ users_manage_ssh_keys | default('undefined') }}'. Must be boolean (true/false)"
+    success_msg: "✅ SSH key management setting is valid: {{ users_manage_ssh_keys }}"
 
-- name: Users | assert | Validate SSH key type parameter
+- name: 🧪 Users | assert | Validate SSH key type parameter
   ansible.builtin.assert:
     that:
       - users_ssh_key_type is defined
       - users_ssh_key_type is string
       - users_ssh_key_type in ["rsa", "ed25519", "ecdsa", "dsa"]
-    quiet: true
-    fail_msg: "users_ssh_key_type must be one of: rsa, ed25519, ecdsa, dsa"
+    fail_msg: "❌ Invalid SSH key type '{{ users_ssh_key_type | default('undefined') }}'. Must be one of: ed25519 (recommended), rsa, ecdsa, dsa"
+    success_msg: "✅ SSH key type is valid: {{ users_ssh_key_type }}"
 
-- name: Users | assert | Validate SSH key bits parameter
+- name: 🧪 Users | assert | Validate SSH key bits parameter
   ansible.builtin.assert:
     that:
       - users_ssh_key_bits is defined
       - users_ssh_key_bits is number
       - users_ssh_key_bits in [1024, 2048, 4096]
-    quiet: true
-    fail_msg: "users_ssh_key_bits must be one of: 1024, 2048, 4096"
+    fail_msg: "❌ Invalid SSH key bits '{{ users_ssh_key_bits | default('undefined') }}'. Must be one of: 4096 (recommended), 2048, 1024"
+    success_msg: "✅ SSH key bits setting is valid: {{ users_ssh_key_bits }}"
 
-- name: Users | assert | Validate SSH directory settings
+- name: 🧪 Users | assert | Validate SSH directory settings
   ansible.builtin.assert:
     that:
       - users_ssh_directory is defined
@@ -197,24 +197,24 @@
       - users_ssh_directory_mode is string
       - users_ssh_authorized_keys_mode is defined
       - users_ssh_authorized_keys_mode is string
-    quiet: true
-    fail_msg: "All SSH directory settings must be defined"
+    fail_msg: "❌ Invalid SSH directory settings. All SSH directory parameters must be defined strings (directory, file names, and file modes)"
+    success_msg: "✅ SSH directory settings are valid: {{ users_ssh_directory }}/{{ users_ssh_authorized_keys_file }} with modes {{ users_ssh_directory_mode }}/{{ users_ssh_authorized_keys_mode }}"
 
 # -----------------------------------------------------------------------------
 # 5. User Dictionaries
 # -----------------------------------------------------------------------------
-- name: Users | assert | Validate users dictionary parameter
+- name: 🧪 Users | assert | Validate users dictionary parameter
   ansible.builtin.assert:
     that:
       - users_dict is defined
       - users_dict is mapping
-    quiet: true
-    fail_msg: "users_dict must be a dictionary (mapping)"
+    fail_msg: "❌ Invalid users dictionary '{{ users_dict | default('undefined') }}'. Must be a dictionary/mapping of username: user_config pairs"
+    success_msg: "✅ Users dictionary is valid with {{ users_dict | length }} user(s) defined"
 
-- name: Users | assert | Validate users remove dictionary parameter
+- name: 🧪 Users | assert | Validate users remove dictionary parameter
   ansible.builtin.assert:
     that:
       - users_remove_dict is defined
       - users_remove_dict is mapping
-    quiet: true
-    fail_msg: "users_remove_dict must be a dictionary (mapping)"
+    fail_msg: "❌ Invalid users remove dictionary '{{ users_remove_dict | default('undefined') }}'. Must be a dictionary/mapping of username: removal_config pairs"
+    success_msg: "✅ Users remove dictionary is valid with {{ users_remove_dict | length }} user(s) to remove"
