@@ -57,6 +57,11 @@ users_default_groups: []
 # When false, users will only belong to their primary group and the groups specified
 users_append_groups: true
 
+# Control whether to overwrite attributes for existing users
+# When false, existing users will not be modified (password and attributes stay unchanged)
+# When true, existing users' attributes (including password) may be updated
+users_overwrite_existing: false
+
 # -----------------------------------------------------------------------------
 # 3. Password Generation Settings
 # -----------------------------------------------------------------------------

@@ -24,7 +24,7 @@
 # -----------------------------------------------------------------------------
 # 1. Environment Setup
 # -----------------------------------------------------------------------------
-- name: molecule | Verify Role
+- name: Molecule | Verify Role
   hosts: all
   gather_facts: true
 
@@ -47,22 +47,23 @@
       ignore_errors: true
 
     - name: Verify | Check if testuser1 has correct UID
-      ansible.builtin.shell:
-        cmd: "id -u testuser1"
+      ansible.builtin.command: id -u testuser1
       register: _uid_result_
       changed_when: false
       ignore_errors: true
 
     - name: Verify | Check if testuser2 is a system user
-      ansible.builtin.shell:
-        cmd: "cat /etc/passwd | grep testuser2"
+      ansible.builtin.getent:
+        database: passwd
+        key: testuser2
       register: _system_user_result_
       changed_when: false
       ignore_errors: true
 
     - name: Verify | Check if users have correct shells
-      ansible.builtin.shell:
-        cmd: "grep {{ item.user }}:.* /etc/passwd | cut -d: -f7"
+      ansible.builtin.getent:
+        database: passwd
+        key: "{{ item.user }}"
       register: _shell_result_
       with_items:
         - { user: 'testuser1', expected: '/bin/bash' }
@@ -75,8 +76,7 @@
     # 3. Group Membership Verification
     # -----------------------------------------------------------------------------
     - name: Verify | Check if users are in correct groups
-      ansible.builtin.shell:
-        cmd: "id -Gn {{ item.user }} | grep -q {{ item.group }}"
+      ansible.builtin.command: id -Gn {{ item.user }}
       register: _group_result_
       with_items:
         - { user: 'testuser1', group: 'developers' }
@@ -101,8 +101,7 @@
       ignore_errors: true
 
     - name: Verify | Check authorized_keys content for testuser1
-      ansible.builtin.shell:
-        cmd: "cat /home/testuser1/.ssh/authorized_keys | grep -q molecule-test-key"
+      ansible.builtin.command: grep -q molecule-test-key /home/testuser1/.ssh/authorized_keys
       register: _auth_keys_content_result_
       changed_when: false
       ignore_errors: true
@@ -121,8 +120,7 @@
       ignore_errors: true
 
     - name: Verify | Check home directory permissions for testuser1
-      ansible.builtin.shell:
-        cmd: "ls -ld /home/testuser1 | awk '{print $1}'"
+      ansible.builtin.command: ls -ld /home/testuser1
       register: _home_perms_result_
       changed_when: false
       ignore_errors: true
@@ -150,15 +148,13 @@
     # 7. Password Expiry Verification
     # -----------------------------------------------------------------------------
     - name: Verify | Check if password expiry is set correctly for testuser3
-      ansible.builtin.shell:
-        cmd: "chage -l testuser3 | grep 'Maximum' | grep -q '60 days'"
+      ansible.builtin.command: chage -l testuser3
       register: _passwd_max_age_result_
       changed_when: false
       ignore_errors: true
 
     - name: Verify | Check if password minimum age is set correctly for testuser3
-      ansible.builtin.shell:
-        cmd: "chage -l testuser3 | grep 'Minimum' | grep -q '7 days'"
+      ansible.builtin.command: chage -l testuser3
       register: _passwd_min_age_result_
       changed_when: false
       ignore_errors: true

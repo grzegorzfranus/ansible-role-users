@@ -62,7 +62,11 @@
       - users_password_min_age is number
       - users_password_min_age >= 0
       - users_password_max_age >= users_password_min_age
-    fail_msg: "❌ Invalid password age parameters. Min: {{ users_password_min_age | default('undefined') }}, Max: {{ users_password_max_age | default('undefined') }}. Must be numbers with max_age >= min_age >= 0"
+    fail_msg: >-
+      ❌ Invalid password age parameters.
+      Min: {{ users_password_min_age | default('undefined') }},
+      Max: {{ users_password_max_age | default('undefined') }}.
+      Must be numbers with max_age >= min_age >= 0
     success_msg: "✅ Password age parameters are valid: min={{ users_password_min_age }} days, max={{ users_password_max_age }} days"
 
 - name: 🧪 Users | assert | Validate group creation parameter
@@ -106,7 +110,9 @@
       - users_password_length is defined
       - users_password_length is number
       - users_password_length >= 8
-    fail_msg: "❌ Invalid password length '{{ users_password_length | default('undefined') }}'. Must be a number >= 8 characters for security"
+    fail_msg: >-
+      ❌ Invalid password length '{{ users_password_length | default('undefined') }}'.
+      Must be a number >= 8 characters for security
     success_msg: "✅ Password length is valid: {{ users_password_length }} characters"
 
 - name: 🧪 Users | assert | Validate password store filename parameter
@@ -128,7 +134,9 @@
   ansible.builtin.assert:
     that:
       - users_password_store_remote_path is defined
-    fail_msg: "❌ Password store remote path is not defined. Must be specified (can be empty string to disable remote storage)"
+    fail_msg: >-
+      ❌ Password store remote path is not defined.
+      Must be specified (can be empty string to disable remote storage)
     success_msg: "✅ Password store remote path is defined: {{ users_password_store_remote_path if users_password_store_remote_path != '' else '(disabled)' }}"
 
 - name: 🧪 Users | assert | Validate password store remote parameter
@@ -145,7 +153,9 @@
       - users_password_chars is defined
       - users_password_chars is string
       - users_password_chars | length >= 10
-    fail_msg: "❌ Invalid password characters '{{ users_password_chars | default('undefined') }}'. Must be a string with at least 10 characters for sufficient complexity"
+    fail_msg: >-
+      ❌ Invalid password characters '{{ users_password_chars | default('undefined') }}'.
+      Must be a string with at least 10 characters for sufficient complexity
     success_msg: "✅ Password characters are valid with {{ users_password_chars | length }} character types defined"
 
 - name: 🧪 Users | assert | Validate password hash algorithm
@@ -153,8 +163,10 @@
     that:
       - users_password_hash_algorithm is defined
       - users_password_hash_algorithm is string
-      - users_password_hash_algorithm in ["sha512", "sha256", "md5"]
-    fail_msg: "❌ Invalid password hash algorithm '{{ users_password_hash_algorithm | default('undefined') }}'. Must be one of: sha512 (recommended), sha256, md5"
+      - users_password_hash_algorithm in ["sha512", "sha256"]
+    fail_msg: >-
+      ❌ Invalid password hash algorithm '{{ users_password_hash_algorithm | default('undefined') }}'.
+      Must be one of: sha512 (recommended), sha256
     success_msg: "✅ Password hash algorithm is valid: {{ users_password_hash_algorithm }}"
 
 # -----------------------------------------------------------------------------

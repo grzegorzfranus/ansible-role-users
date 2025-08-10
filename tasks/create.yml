@@ -25,6 +25,19 @@
     users_dict is defined and users_dict | length > 0
 
 # -----------------------------------------------------------------------------
+# 1a. Discover Existing Users
+# -----------------------------------------------------------------------------
+- name: Users | create | Gather existing users from system database
+  ansible.builtin.getent:
+    database: passwd
+  register: users_getent
+  changed_when: false
+
+- name: Users | create | Build existing users lookup map
+  ansible.builtin.set_fact:
+    users_existing_map: "{{ users_getent.ansible_facts.getent_passwd | default({}) }}"
+
+# -----------------------------------------------------------------------------
 # 2. Password Generation
 # -----------------------------------------------------------------------------
 - name: Users | create | Generate random passwords for users
@@ -41,7 +54,8 @@
   when: >
     users_generate_password | bool and
     item.password is not defined and
-    item.state | default('present') == 'present'
+    item.state | default('present') == 'present' and
+    (users_existing_map[item.name] is not defined or (item.force | default(users_overwrite_existing)) | bool)
 
 - name: Users | create | Store generated passwords to file on Ansible controller
   delegate_to: localhost
@@ -61,7 +75,9 @@
   when: >
     users_generate_password | bool and
     users_password_store_file_name != "" and
-    users_store_passwords_controller | bool
+    users_store_passwords_controller | bool and
+    users_generated_passwords is defined and
+    users_generated_passwords | length > 0
 
 - name: Users | create | Store generated passwords to file on remote host
   ansible.builtin.copy:
@@ -82,7 +98,9 @@
   when: >
     users_generate_password | bool and
     users_password_store_remote_path != "" and
-    users_store_passwords_remote | bool
+    users_store_passwords_remote | bool and
+    users_generated_passwords is defined and
+    users_generated_passwords | length > 0
 
 # -----------------------------------------------------------------------------
 # 3. User Account Creation
@@ -102,32 +120,35 @@
 - name: Users | create | Create user accounts
   ansible.builtin.user:
     name: "{{ item.name }}"
-    comment: "{{ item.comment | default(omit) }}"
-    uid: "{{ item.uid | default(omit) }}"
-    group: "{{ item.group | default(item.name if users_create_group else omit) }}"
-    groups: "{{ item.groups | default(users_default_groups) | join(',') }}"
-    append: "{{ item.append | default(users_append_groups) }}"
-    shell: "{{ item.shell | default(users_default_shell) }}"
-    home: "{{ item.home | default(omit) }}"
-    create_home: "{{ item.create_home | default(users_create_home) }}"
-    move_home: "{{ item.move_home | default(false) }}"
-    system: "{{ item.system | default(false) }}"
+    comment: "{{ (item.comment | default(omit)) if (users_existing_map[item.name] is not defined or (item.force | default(users_overwrite_existing)) | bool) else omit }}"
+    uid: "{{ (item.uid | default(omit)) if (users_existing_map[item.name] is not defined or (item.force | default(users_overwrite_existing)) | bool) else omit }}"
+    group: "{{ (item.group | default(item.name if users_create_group else omit)) if (users_existing_map[item.name] is not defined or (item.force | default(users_overwrite_existing)) | bool) else omit }}"
+    groups: "{{ (item.groups | default(users_default_groups)) if (users_existing_map[item.name] is not defined or (item.force | default(users_overwrite_existing)) | bool) else omit }}"
+    append: "{{ (item.append | default(users_append_groups)) if (users_existing_map[item.name] is not defined or (item.force | default(users_overwrite_existing)) | bool) else omit }}"
+    shell: "{{ (item.shell | default(users_default_shell)) if (users_existing_map[item.name] is not defined or (item.force | default(users_overwrite_existing)) | bool) else omit }}"
+    home: "{{ (item.home | default(omit)) if (users_existing_map[item.name] is not defined or (item.force | default(users_overwrite_existing)) | bool) else omit }}"
+    create_home: "{{ (item.create_home | default(users_create_home)) if (users_existing_map[item.name] is not defined or (item.force | default(users_overwrite_existing)) | bool) else omit }}"
+    move_home: "{{ (item.move_home | default(false)) if (users_existing_map[item.name] is not defined or (item.force | default(users_overwrite_existing)) | bool) else omit }}"
+    system: "{{ (item.system | default(false)) if (users_existing_map[item.name] is not defined or (item.force | default(users_overwrite_existing)) | bool) else omit }}"
     force: "{{ item.force | default(false) }}"
     remove: "{{ item.remove | default(false) }}"
     password: >-
-      {{ (item.password | default(
-           users_generated_passwords[item.name]
-           if users_generated_passwords is defined and users_generated_passwords[item.name] is defined
-           else omit
-         )) | password_hash('sha512', 65534 | random(seed=inventory_hostname) | string) }}
-    update_password: "{{ item.update_password | default('on_create') }}"
-    expires: "{{ item.expires | default(omit) }}"
-    password_expire_max: "{{ item.password_expire_max | default(users_password_max_age) }}"
-    password_expire_min: "{{ item.password_expire_min | default(users_password_min_age) }}"
+      {{ (
+           item.password | default(
+             users_generated_passwords[item.name]
+             if users_generated_passwords is defined and users_generated_passwords[item.name] is defined
+             else omit
+           )
+         ) | password_hash(users_password_hash_algorithm)
+         if (users_existing_map[item.name] is not defined or (item.force | default(users_overwrite_existing)) | bool)
+         else omit }}
+    update_password: "{{ item.update_password | default(('always' if (users_existing_map[item.name] is not defined or (item.force | default(users_overwrite_existing)) | bool) else 'on_create')) }}"
+    expires: "{{ (item.expires | default(omit)) if (users_existing_map[item.name] is not defined or (item.force | default(users_overwrite_existing)) | bool) else omit }}"
+    password_expire_max: "{{ (item.password_expire_max | default(users_password_max_age)) if (users_existing_map[item.name] is not defined or (item.force | default(users_overwrite_existing)) | bool) else omit }}"
+    password_expire_min: "{{ (item.password_expire_min | default(users_password_min_age)) if (users_existing_map[item.name] is not defined or (item.force | default(users_overwrite_existing)) | bool) else omit }}"
     state: "{{ item.state | default('present') }}"
   become: true
   with_items: "{{ users_list }}"
-  register: users_creation_result
   no_log: "{{ item.no_log | default(true) }}"
 
 # -----------------------------------------------------------------------------
@@ -138,7 +159,7 @@
     path: "{{ item.home | default('/home/' + item.name) + '/.ssh' }}"
     state: directory
     owner: "{{ item.name }}"
-    group: "{{ item.group | default(item.name if users_create_group else omit) }}"
+    group: "{{ item.group | default(omit) }}"
     mode: "0700"
   become: true
   with_items: "{{ users_list }}"
@@ -146,8 +167,8 @@
     users_manage_ssh_keys | bool and
     item.ssh_keys is defined and
     item.state | default('present') == 'present' and
-    users_creation_result is defined and
-    item.create_home | default(users_create_home) | bool
+    item.create_home | default(users_create_home) | bool and
+    (users_existing_map[item.name] is not defined or (item.force | default(users_overwrite_existing)) | bool)
 
 - name: Users | create | Add SSH authorized keys for users
   ansible.builtin.authorized_key:
@@ -162,16 +183,5 @@
     - skip_missing: true
   when: >
     users_manage_ssh_keys | bool and
-    item.0.state | default('present') == 'present'
-
-- name: Users | create | Set expiration date for users
-  ansible.builtin.command:
-    cmd: "chage -E {{ item.expires }} {{ item.name }}"
-  args:
-    warn: false
-  become: true
-  with_items: "{{ users_list }}"
-  when: >
-    item.expires is defined and
-    item.state | default('present') == 'present'
-  changed_when: true
+    item.0.state | default('present') == 'present' and
+    (users_existing_map[item.0.name] is not defined or (item.0.force | default(users_overwrite_existing)) | bool)

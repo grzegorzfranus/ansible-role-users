@@ -60,11 +60,11 @@ The following Python modules are required:
 The role uses facts gathered by Ansible on the remote host. If you disable the Setup module in your playbook, the role will not work properly.
 
 ### Root access
-This role already handles privilege escalation for tasks that require it. You can invoke the role in your playbook like:
+This role already handles privilege escalation for tasks that require it. You can invoke the role in your playbook like (Galaxy name recommended):
 ```yaml
 - hosts: servers
   roles:
-    - role: ansible-role-users
+    - role: grzegorzfranus.users
 ```
 
 ## ⚙️ Role Variables
@@ -87,6 +87,7 @@ This role already handles privilege escalation for tasks that require it. You ca
 | `users_create_group` | Create a group with the same name as the user | `true` |
 | `users_default_groups` | Additional groups to add users to | `[]` |
 | `users_append_groups` | Append to groups instead of replacing them | `true` |
+| `users_overwrite_existing` | Overwrite attributes for existing users (password, shell, groups, etc.) | `false` |
 
 ### Password Generation Settings
 
@@ -99,7 +100,7 @@ This role already handles privilege escalation for tasks that require it. You ca
 | `users_password_store_remote_path` | Path to store generated passwords on remote hosts | `""` |
 | `users_store_passwords_remote` | Whether to store passwords on remote hosts | `false` |
 | `users_password_chars` | Character set used for password generation | `"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()-_=+[]{}|;:,.<>?"` |
-| `users_password_hash_algorithm` | Password hashing algorithm (sha512, sha256, md5) | `"sha512"` |
+| `users_password_hash_algorithm` | Password hashing algorithm (sha512, sha256) | `"sha512"` |
 
 ### SSH Key Management
 
@@ -152,26 +153,37 @@ Each user in the `users_dict` can have the following parameters:
 | `state` | Whether user should exist | `present` |
 | `password` | User password (will be hashed) | (generated if not provided) |
 | `update_password` | When to update password (always, on_create) | `on_create` |
+| `force` | Overwrite existing user attributes when user already exists | `users_overwrite_existing` |
 | `password_expire_max` | Maximum password age in days | `users_password_max_age` |
 | `password_expire_min` | Minimum password age in days | `users_password_min_age` |
 | `expires` | Account expiration date (YYYY-MM-DD) | (never expires) |
 | `ssh_keys` | List of SSH authorized keys | (none) |
-| `force` | Whether to force operations | `false` |
 | `remove` | Whether to remove home dir when removing user | `false` |
 | `no_log` | Whether to suppress logging of task | `true` |
 | `password_length` | Custom length for generated password | `users_password_length` |
+## ♻️ Overwrite Behavior for Existing Users
+
+By default, the role does not modify existing users. This means their password, shell, groups, and other attributes remain unchanged unless you explicitly enable overwriting:
+
+- Global toggle: set `users_overwrite_existing: true` to allow updates for all existing users
+- Per-user override: set `force: true` within a specific user entry in `users_dict`
+
+When neither is set, only new users are created and existing users are left intact. Password updates use `update_password: on_create` unless overwrite is enabled for the user.
+
 
 ## 🔐 Secure Password Management
 
 This role implements several security best practices for password management:
 
 1. **Random Password Generation**: Uses Ansible's `password` lookup plugin to generate cryptographically secure random passwords.
-2. **Secure Hashing**: All passwords are hashed using SHA-512 with a random salt.
+2. **Secure Hashing**: All passwords are hashed using the configured algorithm (`sha512` by default) with a random salt.
 3. **No Plain-Text Storage**: Generated passwords are not stored in variables longer than necessary.
 4. **No Logging**: Password operations use `no_log: true` to prevent password exposure in logs.
 5. **Flexible Storage Options**: Passwords can be stored on either the Ansible controller, remote hosts, or both.
 
 ## 📝 Retrieving Generated Passwords
+
+Note: Password files are created only when at least one password is generated (i.e., when creating new users or when overwriting existing users with `force: true` or `users_overwrite_existing: true`).
 
 When `users_generate_password` is enabled, passwords can be stored in the following ways:
 
@@ -351,6 +363,8 @@ ansible-playbook playbook.yml --skip-tags "remove,cleanup"
           uid: 1001
           groups: ["wheel", "sudo"]
           shell: "/bin/bash"
+          # Overwrite this user on subsequent runs
+          force: true
           ssh_keys:
             - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPM4xxxxxxxxxx admin@example.com"
         

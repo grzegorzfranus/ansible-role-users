@@ -5,6 +5,36 @@ All notable changes to this User Management role will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.3] - 2025-08-08
+
+### Changed 🔄
+- Respect configured `users_password_hash_algorithm` and remove deterministic salt usage in password hashing
+- Use list type for `user.groups` instead of comma-joined string
+- Simplify SSH directory group ownership default to rely on system defaults
+- Remove non-idempotent `chage` command task (use `user.expires` instead)
+
+### Added ✅
+- New `users_overwrite_existing` default (false): when a user already exists, do not update password or other attributes unless `force` (per user) or `users_overwrite_existing` is true
+- Password and attribute updates now conditionally apply only when creating a user or when overwrite is enabled
+- Replace deprecated/legacy loops with modern style only where needed (kept structure consistent)
+ - Password files are now written only when at least one password is generated (new users or overwrite)
+
+### Fixed 🔧
+- Molecule: Fix play name casing to start with uppercase (ansible-lint name[casing])
+- Use `ansible.builtin.command` FQCN and add justified `# noqa command-instead-of-module` for systemd readiness check
+- Replace unnecessary `shell` tasks in verify with modules/`command` invocations
+- Address YAML long-line warnings by folding messages in `tasks/assert.yml`
+- Remove `md5` from allowed hash algorithms in assertions and docs
+- Clean `meta/main.yml` by removing non-standard `galaxy_tags` under platform entries
+
+### Security 🔐
+- Disallow weak `md5` hashing; only `sha512` and `sha256` accepted
+- Narrow potential overuse of salts by letting `password_hash` generate a secure random salt
+
+### Linting ✅
+- ansible-lint: 0 failures on role and Molecule files
+- yamllint: warnings addressed in assertions file
+
 ## [1.0.2] - 2025-06-27
 
 ### Changed 🔄
@@ -54,22 +84,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Consistent Naming**: Aligned main tasks with professional emoji standards across the role
 
 ### Documentation Enhancement 📚
-- **Features Section**: Added comprehensive ✨ Features section highlighting role capabilities
-- **CI/CD Documentation**: Added 🧪 Test & Validation Pipeline and 📦 Galaxy Publishing sections
-- **Security Features**: Added detailed 🛡️ Security Features section with best practices
-- **Verification Guide**: Added comprehensive 🔍 Verification section with testing commands
-- **Enhanced Structure**: Improved README organization following professional documentation standards
-- **Visual Improvements**: Added emojis and enhanced formatting for better readability
-- **Security Configuration**: Added examples for enhanced security configuration patterns
-- **Header Emojis**: Added descriptive emojis to all main README headers for improved navigation:
-  - 🎯 Main Actions
-  - 📋 Requirements
-  - ⚙️ Role Variables
-  - 👤 User Parameters
-  - 🔐 Secure Password Management
-  - 📝 Retrieving Generated Passwords
-  - 🏷️ Role Tags
-  - 📖 Example Playbooks
 
 ## [1.0.1] - 2025-05-18
 

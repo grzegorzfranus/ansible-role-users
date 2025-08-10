@@ -17,7 +17,7 @@
 # -----------------------------------------------------------------------------
 # 1. Pre-Tasks Setup
 # -----------------------------------------------------------------------------
-- name: molecule | Converge
+- name: Molecule | Converge
   hosts: all
 
   pre_tasks:
@@ -38,8 +38,8 @@
         ansible_os_family == "RedHat"
 
     # System Initialization
-    - name: Converge | Wait for systemd to complete initialization
-      command: systemctl is-system-running
+    - name: Converge | Wait for systemd to complete initialization  # noqa command-instead-of-module
+      ansible.builtin.command: systemctl is-system-running
       register: systemctl_status
       until: >
         'running' in systemctl_status.stdout or
