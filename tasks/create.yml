@@ -62,7 +62,7 @@
   become: false
   ansible.builtin.copy:
     content: |
-      # Generated Passwords - {{ ansible_date_time.iso8601 }}
+      # Generated Passwords - {{ ansible_facts['date_time']['iso8601'] }}
       # Host: {{ inventory_hostname }}
       {% for user in users_list %}
       {% if users_generated_passwords[user.name] is defined %}
@@ -82,7 +82,7 @@
 - name: Users | create | Store generated passwords to file on remote host
   ansible.builtin.copy:
     content: |
-      # Generated Passwords - {{ ansible_date_time.iso8601 }}
+      # Generated Passwords - {{ ansible_facts['date_time']['iso8601'] }}
       # Host: {{ inventory_hostname }}
       {% for user in users_list %}
       {% if users_generated_passwords[user.name] is defined %}

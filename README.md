@@ -42,7 +42,7 @@ List of officially supported operating systems:
 
 ### Ansible version
 
-Ansible >= 2.15
+Ansible >= 2.17 (tested up to 2.20)
 
 ### Python version
 
@@ -347,7 +347,7 @@ ansible-playbook playbook.yml --skip-tags "remove,cleanup"
       
       # Store passwords on Ansible controller with custom filename
       users_store_passwords_controller: true
-      users_password_store_file_name: "users_{{ inventory_hostname }}_{{ ansible_date_time.date }}.txt"
+      users_password_store_file_name: "users_{{ inventory_hostname }}_{{ ansible_facts['date_time']['date'] }}.txt"
       
       # Store passwords on remote hosts
       users_store_passwords_remote: true
@@ -534,6 +534,38 @@ ls -la /home/removed_username 2>/dev/null || echo "Home directory successfully r
 # Check user's group was removed (if it was a unique group)
 getent group removed_username 2>/dev/null || echo "User group successfully removed"
 ```
+
+## ⚠️ Known Issues
+
+### Ansible Deprecation Warning (ansible-core 2.17+)
+
+When using this role with ansible-core 2.17 or later, you may see the following deprecation warning:
+
+```
+[DEPRECATION WARNING]: Importing 'to_native' from 'ansible.module_utils._text' is deprecated.
+This feature will be removed from ansible-core version 2.24.
+Use ansible.module_utils.common.text.converters instead.
+```
+
+**This warning is NOT a defect in this role.** It originates from Ansible's internal `ansible.builtin.authorized_key` module code. Key points:
+
+- ✅ **No action required** - The role functions correctly despite the warning
+- ✅ **Cosmetic only** - This is a deprecation notice, not an error
+- ✅ **Will be fixed by Ansible** - The Ansible core team will update the module before version 2.24
+- ✅ **No role code changes needed** - The deprecated import is in Ansible's internal module code
+
+To suppress this warning temporarily, you can set the environment variable:
+```bash
+export ANSIBLE_DEPRECATION_WARNINGS=False
+```
+
+Or in your `ansible.cfg`:
+```ini
+[defaults]
+deprecation_warnings = False
+```
+
+**Note:** Suppressing warnings is not recommended for production use as it may hide other important deprecation notices.
 
 ## 🤝 Contributing
 

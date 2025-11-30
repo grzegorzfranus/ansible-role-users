@@ -28,14 +28,14 @@
         cache_valid_time: 600
       changed_when: false
       when: >
-        ansible_os_family == "Debian"
+        ansible_facts['os_family'] == "Debian"
 
     - name: Converge | Update dnf cache
       ansible.builtin.dnf:
         update_cache: true
       changed_when: false
       when: >
-        ansible_os_family == "RedHat"
+        ansible_facts['os_family'] == "RedHat"
 
     # System Initialization
     - name: Converge | Wait for systemd to complete initialization  # noqa command-instead-of-module

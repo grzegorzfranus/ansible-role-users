@@ -5,6 +5,29 @@ All notable changes to this User Management role will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.4] - 2025-11-29
+
+### Fixed 🔧
+- Replaced deprecated top-level fact variables with `ansible_facts[]` syntax to resolve `INJECT_FACTS_AS_VARS` deprecation warning
+  - `ansible_hostname` → `ansible_facts['hostname']`
+  - `ansible_date_time.*` → `ansible_facts['date_time']['*']`
+  - `ansible_os_family` → `ansible_facts['os_family']`
+- Updated all task files, defaults, and molecule tests to use the new fact access pattern
+
+### Changed 🔄
+- Updated minimum Ansible version requirement from 2.15 to 2.17
+- Verified full compatibility with Ansible 2.20
+
+### Documentation 📚
+- Added note about Ansible internal deprecation warning (`to_native` import in `authorized_key` module)
+- Clarified that the deprecation warning is an Ansible core issue, not a role defect
+- Updated README.md with Ansible version requirements and known issues section
+
+### Compatibility ✅
+- Tested and validated with ansible-core 2.17, 2.18, 2.19, and 2.20
+- Full compliance with ansible-core 2.24 deprecation requirements
+- The `ansible.builtin.authorized_key` module deprecation warning is cosmetic and does not affect functionality
+
 ## [1.0.3] - 2025-08-08
 
 ### Changed 🔄
