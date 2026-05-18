@@ -427,15 +427,15 @@ ansible-playbook playbook.yml --skip-tags "remove,cleanup"
           password_length: 20              # Custom length for generated password
 ```
 
-### 🧪 Test & Validation Pipeline
+### Test & Validation Pipeline
 - **Workflow**: `.github/workflows/test-and-validation.yml`
-- **Name**: `🧪 Test & Validation Pipeline`
+- **Name**: `CI/CD`
 - **Purpose**: Automated testing using Molecule across multiple distributions
 - **Triggers**: Push to main branch, pull requests to main/feature/release/bugfix/hotfix branches
 
-### 📦 Galaxy Publishing
+### Galaxy Publishing
 - **Workflow**: `.github/workflows/publish-to-galaxy.yml`
-- **Name**: `📦 Publish to Ansible Galaxy`
+- **Name**: `Publish`
 - **Purpose**: Automated role publishing to Ansible Galaxy
 - **Triggers**: Tagged releases (v*)
 
