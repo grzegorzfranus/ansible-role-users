@@ -122,7 +122,10 @@
     name: "{{ item.name }}"
     comment: "{{ (item.comment | default(omit)) if (users_existing_map[item.name] is not defined or (item.force | default(users_overwrite_existing)) | bool) else omit }}"
     uid: "{{ (item.uid | default(omit)) if (users_existing_map[item.name] is not defined or (item.force | default(users_overwrite_existing)) | bool) else omit }}"
-    group: "{{ (item.group | default(item.name if users_create_group else omit)) if (users_existing_map[item.name] is not defined or (item.force | default(users_overwrite_existing)) | bool) else omit }}"
+    group: >-
+      {{ (item.group | default(item.name if users_create_group else omit))
+         if (users_existing_map[item.name] is not defined or (item.force | default(users_overwrite_existing)) | bool)
+         else omit }}
     groups: "{{ (item.groups | default(users_default_groups)) if (users_existing_map[item.name] is not defined or (item.force | default(users_overwrite_existing)) | bool) else omit }}"
     append: "{{ (item.append | default(users_append_groups)) if (users_existing_map[item.name] is not defined or (item.force | default(users_overwrite_existing)) | bool) else omit }}"
     shell: "{{ (item.shell | default(users_default_shell)) if (users_existing_map[item.name] is not defined or (item.force | default(users_overwrite_existing)) | bool) else omit }}"
@@ -144,8 +147,14 @@
          else omit }}
     update_password: "{{ item.update_password | default(('always' if (users_existing_map[item.name] is not defined or (item.force | default(users_overwrite_existing)) | bool) else 'on_create')) }}"
     expires: "{{ (item.expires | default(omit)) if (users_existing_map[item.name] is not defined or (item.force | default(users_overwrite_existing)) | bool) else omit }}"
-    password_expire_max: "{{ (item.password_expire_max | default(users_password_max_age)) if (users_existing_map[item.name] is not defined or (item.force | default(users_overwrite_existing)) | bool) else omit }}"
-    password_expire_min: "{{ (item.password_expire_min | default(users_password_min_age)) if (users_existing_map[item.name] is not defined or (item.force | default(users_overwrite_existing)) | bool) else omit }}"
+    password_expire_max: >-
+      {{ (item.password_expire_max | default(users_password_max_age))
+         if (users_existing_map[item.name] is not defined or (item.force | default(users_overwrite_existing)) | bool)
+         else omit }}
+    password_expire_min: >-
+      {{ (item.password_expire_min | default(users_password_min_age))
+         if (users_existing_map[item.name] is not defined or (item.force | default(users_overwrite_existing)) | bool)
+         else omit }}
     state: "{{ item.state | default('present') }}"
   become: true
   with_items: "{{ users_list }}"
@@ -171,7 +180,7 @@
     (users_existing_map[item.name] is not defined or (item.force | default(users_overwrite_existing)) | bool)
 
 - name: Users | create | Add SSH authorized keys for users
-  ansible.builtin.authorized_key:
+  ansible.posix.authorized_key:
     user: "{{ item.0.name }}"
     key: "{{ item.1 }}"
     manage_dir: true
