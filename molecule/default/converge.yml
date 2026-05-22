@@ -99,4 +99,4 @@
         createhome: true
 
   roles:
-    - role: grzegorzfranus.users
+    - role: ../../..
