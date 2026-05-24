@@ -1,7 +1,7 @@
 # Ansible Role: Users
 
-|Source|Version|Tests|License|
-|------|-------|-------|-------|
+|Source|Version|CI|License|
+|------|-------|--|-------|
 |[![Source Code](https://img.shields.io/badge/source-github-blue.svg)](https://github.com/grzegorzfranus/ansible-role-users)|[![Version](https://img.shields.io/github/v/release/grzegorzfranus/ansible-role-users)](https://github.com/grzegorzfranus/ansible-role-users/releases)|[![CI](https://github.com/grzegorzfranus/ansible-role-users/actions/workflows/ci.yml/badge.svg)](https://github.com/grzegorzfranus/ansible-role-users/actions/workflows/ci.yml)|[![Repository License](https://img.shields.io/badge/license-apache2.0-brightgreen.svg)](LICENSE)|
 
 This Ansible role manages user accounts on Linux systems. It provides capabilities for creating users with custom home directories, shells, comments, and other parameters. The role also includes secure password generation and optional SSH key management.
@@ -67,7 +67,65 @@ This role already handles privilege escalation for tasks that require it. You ca
     - role: grzegorzfranus.users
 ```
 
-## ⚙️ Role Variables
+## 🚀 Quick Start
+
+### 1. Basic User Creation
+
+```yaml
+---
+- name: Create System Users
+  hosts: all
+  become: true
+  roles:
+    - role: grzegorzfranus.users
+      vars:
+        users_dict:
+          johndoe:
+            comment: "John Doe"
+            groups: ["sudo"]
+```
+
+### 2. Run the playbook
+
+```bash
+ansible-playbook -i inventory playbook.yml
+```
+
+## ⚙️ Configuration
+
+### Default Configuration
+
+The role is pre-configured with secure and sensible defaults:
+
+```yaml
+# Role execution control (Options: 'all', 'create', 'remove')
+users_role_action: "all"
+
+# Shell configuration
+users_default_shell: "/bin/bash"
+
+# Password aging policy
+users_password_max_age: 90
+users_password_min_age: 0
+
+# SSH key management
+users_manage_ssh_keys: false
+```
+
+## 📌 Role Properties
+
+| Property | Value | Description |
+|----------|-------|-------------|
+| **Idempotent** | ✅ Yes | Running the role multiple times only modifies users if their state/details change. |
+| **Atomic** | ❌ No | Users are created/removed sequentially. A failure mid-run may leave users partially managed. |
+| **Check Mode** | ✅ Supported | All user management actions support check mode simulation. |
+| **Diff Mode** | ✅ Supported | Configuration templates and files support diff mode preview. |
+
+## 📤 Role Output
+
+This role does not set any public output facts.
+
+## 📊 Variables
 
 ### General Settings
 
@@ -249,7 +307,7 @@ ansible-playbook playbook.yml --tags "create"
 ansible-playbook playbook.yml --skip-tags "remove,cleanup"
 ```
 
-## 📖 Example Playbooks
+## Example Playbook
 
 ### Creating Users with Dictionary Format
 
@@ -577,7 +635,58 @@ deprecation_warnings = False
 
 **Note:** Suppressing warnings is not recommended for production use as it may hide other important deprecation notices.
 
-## Contributing
+## 📁 File Structure
+
+```
+ansible-role-users/
+├── .github/                  # GitHub Actions workflows
+│   └── workflows/           # CI/CD automation
+│       ├── ci.yml           # CI pipeline (reusable ansible-ci.yml)
+│       └── release.yml      # Release Please + Galaxy publish
+├── .release-please-manifest.json # Release Please version manifest
+├── release-please-config.json # Release Please configuration
+├── defaults/
+│   └── main.yml             # Default variables
+├── handlers/
+│   └── main.yml             # Service handlers
+├── meta/
+│   ├── main.yml             # Role metadata
+│   └── argument_specs.yml   # Argument specs validation
+├── tasks/
+│   ├── main.yml             # Main orchestration and flow control
+│   ├── assert.yml           # Variable validation
+│   ├── create.yml           # User creation tasks
+│   ├── key_management.yml   # SSH key management
+│   └── remove.yml           # User removal tasks
+└── vars/
+    └── main.yml             # Common variables/constants
+```
+
+## 🔧 Troubleshooting
+
+### User Creation Issues
+
+If a user cannot be created, verify that there are no conflicting UIDs or usernames:
+
+```bash
+# Check if username already exists
+getent passwd username
+
+# Check if UID already exists
+getent passwd | grep :1500:
+```
+
+### SSH Key Authentication Failures
+
+If SSH key authentication is not working, verify that the `.ssh` directory and `authorized_keys` file have the correct permissions:
+
+```bash
+# Check permissions on home and .ssh
+ls -la /home/username
+ls -la /home/username/.ssh
+```
+
+## 🤝 Contributing
 
 Contributions, bug reports, and feature requests are welcome!
 
