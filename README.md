@@ -37,8 +37,8 @@ List of officially supported operating systems:
 | Ubuntu | 22.04 (Jammy) | ![✓](https://img.shields.io/badge/✓-brightgreen.svg) |
 | Debian | 12 (Bookworm) | ![✓](https://img.shields.io/badge/✓-brightgreen.svg) |
 | Debian | 11 (Bullseye) | ![✓](https://img.shields.io/badge/✓-brightgreen.svg) |
-| Rocky Linux | 9 | ![✓](https://img.shields.io/badge/✓-brightgreen.svg) |
-| Oracle Linux | 9 | ![✓](https://img.shields.io/badge/✓-brightgreen.svg) |
+| EL (RHEL, Rocky, Alma, Oracle) | 9 | ![✓](https://img.shields.io/badge/✓-brightgreen.svg) |
+| EL (RHEL, Rocky, Alma, Oracle) | 8 | ![✓](https://img.shields.io/badge/✓-brightgreen.svg) |
 
 ### Ansible version
 
@@ -306,9 +306,7 @@ ansible-playbook playbook.yml --tags "create"
 # Skip user removal tasks
 ansible-playbook playbook.yml --skip-tags "remove,cleanup"
 ```
-
-## Example Playbook
-
+## Example Playbooks
 ### Creating Users with Dictionary Format
 
 ```yaml

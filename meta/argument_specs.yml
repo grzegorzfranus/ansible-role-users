@@ -1,0 +1,164 @@
+---
+argument_specs:
+  main:
+    short_description: "Manage system user accounts, groups, and SSH keys"
+    description:
+      - "Creates, modifies, and removes user accounts with password policies and SSH key support."
+      - "Supports Ubuntu 22.04/24.04, Debian 11/12, and EL 8/9."
+    author: "Grzegorz Franus"
+
+    options:
+      # General Settings
+      users_role_action:
+        description: "Role execution action control."
+        type: str
+        default: "all"
+        choices:
+          - all
+          - create
+          - remove
+
+      users_create_home:
+        description: "Whether to create home directories for new users."
+        type: bool
+        default: true
+
+      users_remove_home:
+        description: "Whether to remove home directories when removing users."
+        type: bool
+        default: true
+
+      # User Default Configuration
+      users_default_shell:
+        description: "Default login shell for new users."
+        type: str
+        default: "/bin/bash"
+
+      users_password_max_age:
+        description: "Maximum password age in days before requiring a change."
+        type: int
+        default: 90
+
+      users_password_min_age:
+        description: "Minimum password age in days before allowing a change."
+        type: int
+        default: 0
+
+      users_create_group:
+        description: "Whether to create a primary group matching the username."
+        type: bool
+        default: true
+
+      users_default_groups:
+        description: "Additional groups to add all users to by default."
+        type: list
+        elements: str
+        default: []
+
+      users_append_groups:
+        description: "Append to existing groups (true) or replace them (false)."
+        type: bool
+        default: true
+
+      users_overwrite_existing:
+        description: "Whether to overwrite attributes for existing users."
+        type: bool
+        default: false
+
+      # Password Generation Settings
+      users_generate_password:
+        description: "Automatically generate random passwords for new users."
+        type: bool
+        default: true
+
+      users_password_length:
+        description: "Length of generated passwords."
+        type: int
+        default: 16
+
+      users_password_store_file_name:
+        description: "Filename to store generated passwords on the Ansible controller."
+        type: str
+
+      users_store_passwords_controller:
+        description: "Whether to store generated passwords on the Ansible controller."
+        type: bool
+        default: false
+
+      users_password_store_remote_path:
+        description: "Path to store generated passwords on the remote hosts."
+        type: str
+        default: ""
+
+      users_store_passwords_remote:
+        description: "Whether to store generated passwords on the remote hosts."
+        type: bool
+        default: false
+
+      users_password_chars:
+        description: "Character set used for password generation."
+        type: str
+
+      users_password_hash_algorithm:
+        description: "Password hash algorithm."
+        type: str
+        default: "sha512"
+        choices:
+          - sha512
+          - sha256
+
+      # SSH Key Management
+      users_manage_ssh_keys:
+        description: "Whether to manage SSH authorized keys for users."
+        type: bool
+        default: false
+
+      users_ssh_key_type:
+        description: "Default SSH key type."
+        type: str
+        default: "ed25519"
+        choices:
+          - rsa
+          - ed25519
+          - ecdsa
+          - dsa
+
+      users_ssh_key_bits:
+        description: "Default key size for RSA keys."
+        type: int
+        default: 4096
+        choices:
+          - 1024
+          - 2048
+          - 4096
+
+      users_ssh_directory:
+        description: "SSH directory name inside user home."
+        type: str
+        default: ".ssh"
+
+      users_ssh_authorized_keys_file:
+        description: "Path to authorized_keys file inside user home."
+        type: str
+        default: ".ssh/authorized_keys"
+
+      users_ssh_directory_mode:
+        description: "Permissions for the .ssh directory."
+        type: str
+        default: "0700"
+
+      users_ssh_authorized_keys_mode:
+        description: "Permissions for the authorized_keys file."
+        type: str
+        default: "0600"
+
+      # User Dictionaries
+      users_dict:
+        description: "Dictionary of users to create/manage."
+        type: dict
+        default: {}
+
+      users_remove_dict:
+        description: "Dictionary of users to remove."
+        type: dict
+        default: {}

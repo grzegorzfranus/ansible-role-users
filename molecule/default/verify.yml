@@ -129,20 +129,23 @@
     # 6. User Removal Verification
     # -----------------------------------------------------------------------------
     - name: Verify | Check if removed user no longer exists
-      ansible.builtin.getent:
-        database: passwd
-        key: "testuser_remove"
+      ansible.builtin.command: id testuser_remove
       register: _removed_user_result_
-      failed_when: _removed_user_result_.stdout != ""
+      failed_when: false
       changed_when: false
-      ignore_errors: true
+
+    - name: Verify | Assert removed user no longer exists
+      ansible.builtin.assert:
+        that:
+          - _removed_user_result_.rc != 0
+        fail_msg: "❌ User testuser_remove still exists on the system"
+        success_msg: "✅ User testuser_remove has been successfully removed"
 
     - name: Verify | Check if home directory of removed user no longer exists
       ansible.builtin.stat:
         path: "/home/testuser_remove"
       register: _removed_home_result_
       failed_when: _removed_home_result_.stat.exists | default(false)
-      ignore_errors: true
 
     # -----------------------------------------------------------------------------
     # 7. Password Expiry Verification
