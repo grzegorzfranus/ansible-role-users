@@ -18,13 +18,10 @@ galaxy_info:
       versions:
         - "noble"
         - "jammy"
-    - name: Rocky
-      versions:
-        - "9.0"
     - name: EL
       versions:
-        - "9"
         - "8"
+        - "9"
 
   galaxy_tags:
     - users

@@ -89,14 +89,9 @@
         password_expire_min: 7
         password_expire_max: 60
 
-  tasks:
-    # First create a user that we'll test removing later
-    - name: Converge | Create test removal user
-      ansible.builtin.user:
-        name: testuser_remove
-        comment: "Test Remove User"
-        state: present
-        createhome: true
+    users_remove_dict:
+      testuser_remove:
+        remove_home: true
 
   roles:
-    - role: ../../..
+    - role: ../../.. # noqa role-name[path]

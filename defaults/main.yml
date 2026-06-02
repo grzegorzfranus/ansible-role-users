@@ -2,8 +2,16 @@
 # =============================================================================
 # Ansible Role: Users - Default Variables
 # =============================================================================
-# This file defines default configuration values for the Users management role.
+# This file defines default configuration values for the Users role.
 # These values can be overridden by setting them in your playbook or inventory.
+#
+# Supported OS distributions:
+# - Ubuntu 24.04 (Noble) and variants
+# - Ubuntu 22.04 (Jammy) and variants
+# - Debian 12 (Bookworm) and variants
+# - Debian 11 (Bullseye) and variants
+# - EL 9: Rocky Linux 9, RHEL 9, AlmaLinux 9, CentOS Stream 9
+# - EL 8: Rocky Linux 8, RHEL 8, AlmaLinux 8, CentOS Stream 8
 #
 # Sections:
 #   1. General Settings
@@ -81,8 +89,10 @@ users_password_length: 16
 # File will have restricted permissions (0600)
 # Default is to use a filename with hostname and timestamp
 users_password_store_file_name: >-
-  passwords_{{ ansible_facts['hostname'] }}_{{ ansible_facts['date_time']['year'] }}-{{ ansible_facts['date_time']['month'] }}-{{ ansible_facts['date_time']['day'] }}_
-  {{ ansible_facts['date_time']['hour'] }}-{{ ansible_facts['date_time']['minute'] }}-{{ ansible_facts['date_time']['second'] }}
+  passwords_{{ ansible_facts['hostname'] }}_{{ ansible_facts['date_time']['year']
+  }}-{{ ansible_facts['date_time']['month'] }}-{{ ansible_facts['date_time']['day']
+  }}_{{ ansible_facts['date_time']['hour'] }}-{{ ansible_facts['date_time']['minute']
+  }}-{{ ansible_facts['date_time']['second'] }}
 
 # Whether to store generated passwords on the Ansible controller
 # When true, passwords will be stored in the file specified by users_password_store_file_name

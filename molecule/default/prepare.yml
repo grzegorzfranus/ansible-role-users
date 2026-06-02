@@ -40,13 +40,23 @@
           echo ""
       changed_when: false
 
+    # Justification: Use command uname on localhost to detect if the control
+    # machine is macOS, as we cannot install system packages on macOS via apt/dnf/yum.
+    - name: Prepare | Check if localhost is macOS
+      delegate_to: localhost
+      ansible.builtin.command: uname
+      register: __localhost_uname
+      changed_when: false
+
     - name: Prepare | Ensure required packages are installed
       delegate_to: localhost
       ansible.builtin.package:
         name:
           - python3-pip  # Adding pip for Python modules
         state: present
-      when: ansible_pkg_mgr in ['apt', 'dnf', 'yum']
+      when:
+        - ansible_pkg_mgr in ['apt', 'dnf', 'yum']
+        - __localhost_uname.stdout != 'Darwin'
 
     - name: Prepare | Install passlib Python module (required for password hashing)
       delegate_to: localhost
@@ -61,3 +71,10 @@
       with_items:
         - testgroup
         - developers
+
+    - name: Prepare | Create test removal user
+      ansible.builtin.user:
+        name: testuser_remove
+        comment: "Test Remove User"
+        state: present
+        createhome: true
