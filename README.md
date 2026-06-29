@@ -29,12 +29,19 @@ This Ansible role manages user accounts on Linux systems. It provides capabiliti
 
 ## 📋 Requirements
 
+- **Ansible**: 2.17 or higher
+- **Python**: 3.9 or higher on target hosts
+- **Privileges**: sudo/root access on target hosts
+
 ### Supported operating systems
-List of officially supported operating systems:
+List of officially supported operating systems for this role:
+
 | OS Family | Version | Status |
 |-----------|---------|---------|
+| Ubuntu | 26.04 (Resolute) | ![✓](https://img.shields.io/badge/✓-brightgreen.svg) |
 | Ubuntu | 24.04 (Noble) | ![✓](https://img.shields.io/badge/✓-brightgreen.svg) |
 | Ubuntu | 22.04 (Jammy) | ![✓](https://img.shields.io/badge/✓-brightgreen.svg) |
+| Debian | 13 (Trixie)   | ![✓](https://img.shields.io/badge/✓-brightgreen.svg) |
 | Debian | 12 (Bookworm) | ![✓](https://img.shields.io/badge/✓-brightgreen.svg) |
 | Debian | 11 (Bullseye) | ![✓](https://img.shields.io/badge/✓-brightgreen.svg) |
 | EL (RHEL, Rocky, Alma, Oracle) | 9 | ![✓](https://img.shields.io/badge/✓-brightgreen.svg) |
@@ -60,12 +67,7 @@ The following Python modules are required:
 The role uses facts gathered by Ansible on the remote host. If you disable the Setup module in your playbook, the role will not work properly.
 
 ### Root access
-This role already handles privilege escalation for tasks that require it. You can invoke the role in your playbook like (Galaxy name recommended):
-```yaml
-- hosts: servers
-  roles:
-    - role: grzegorzfranus.users
-```
+This role requires root access for user management tasks. Make sure you are using a user with root privileges.
 
 ## 🚀 Quick Start
 
@@ -637,10 +639,18 @@ deprecation_warnings = False
 
 ```
 ansible-role-users/
-├── .github/                  # GitHub Actions workflows
-│   └── workflows/           # CI/CD automation
-│       ├── ci.yml           # CI pipeline (reusable ansible-ci.yml)
-│       └── release.yml      # Release Please + Galaxy publish
+├── .github/
+│   ├── ISSUE_TEMPLATE/                # Issue templates for bug, feature, task
+│   │   ├── bug_report.yml
+│   │   ├── config.yml
+│   │   ├── feature_request.yml
+│   │   └── task.yml
+│   ├── PULL_REQUEST_TEMPLATE/         # Pull request description template
+│   │   └── pull_request_template.md
+│   ├── workflows/
+│   │   ├── ci.yml                     # CI pipeline
+│   │   └── release.yml                # Release Please + Galaxy publish
+│   └── dependabot.yml                 # Dependabot configuration for GitHub Actions
 ├── .release-please-manifest.json # Release Please version manifest
 ├── release-please-config.json # Release Please configuration
 ├── defaults/
@@ -650,6 +660,8 @@ ansible-role-users/
 ├── meta/
 │   ├── main.yml             # Role metadata
 │   └── argument_specs.yml   # Argument specs validation
+├── molecule/                # Molecule testing framework
+│   └── default/             # Default testing scenario
 ├── tasks/
 │   ├── main.yml             # Main orchestration and flow control
 │   ├── assert.yml           # Variable validation
