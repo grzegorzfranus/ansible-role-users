@@ -29,8 +29,13 @@ This Ansible role manages user accounts on Linux systems. It provides capabiliti
 
 ## 📋 Requirements
 
+- **Ansible**: 2.17 or higher
+- **Python**: 3.9 or higher on target hosts
+- **Privileges**: sudo/root access on target hosts
+
 ### Supported operating systems
-List of officially supported operating systems:
+List of officially supported operating systems for this role:
+
 | OS Family | Version | Status |
 |-----------|---------|---------|
 | Ubuntu | 24.04 (Noble) | ![✓](https://img.shields.io/badge/✓-brightgreen.svg) |
@@ -38,7 +43,14 @@ List of officially supported operating systems:
 | Debian | 12 (Bookworm) | ![✓](https://img.shields.io/badge/✓-brightgreen.svg) |
 | Debian | 11 (Bullseye) | ![✓](https://img.shields.io/badge/✓-brightgreen.svg) |
 | EL (RHEL, Rocky, Alma, Oracle) | 9 | ![✓](https://img.shields.io/badge/✓-brightgreen.svg) |
-| EL (RHEL, Rocky, Alma, Oracle) | 8 | ![✓](https://img.shields.io/badge/✓-brightgreen.svg) |
+| EL (RHEL, Rocky, Alma, Oracle) | 8 | ![✓](https://img.shields.io/badge/✓-brightgreen.svg) \* |
+
+> \* **EL8 Compatibility Constraints**:
+>
+> - **Ansible & Python compatibility**: EL8 defaults to Python 3.6. Support for target Python 3.6 was dropped in `ansible-core` >= 2.17.
+>   - To run on EL8 with the system's default Python 3.6, you must use `ansible-core` <= 2.16.
+>   - If running `ansible-core` >= 2.17, EL8 targets require Python >= 3.7. However, the system `python3-dnf` package manager bindings on EL8 are compiled exclusively for Python 3.6 and will not be available on newer Python interpreters. This will cause tasks using the `dnf` module (such as installing packages or user management configurations that rely on it) to fail.
+> - **Molecule Testing**: Due to these Python version compatibility constraints, EL8 is not officially tested in the role's Molecule test suite (which runs a newer Ansible version in CI).
 
 ### Ansible version
 
@@ -60,12 +72,7 @@ The following Python modules are required:
 The role uses facts gathered by Ansible on the remote host. If you disable the Setup module in your playbook, the role will not work properly.
 
 ### Root access
-This role already handles privilege escalation for tasks that require it. You can invoke the role in your playbook like (Galaxy name recommended):
-```yaml
-- hosts: servers
-  roles:
-    - role: grzegorzfranus.users
-```
+This role requires root access for user management tasks. Make sure you are using a user with root privileges.
 
 ## 🚀 Quick Start
 
@@ -637,10 +644,18 @@ deprecation_warnings = False
 
 ```
 ansible-role-users/
-├── .github/                  # GitHub Actions workflows
-│   └── workflows/           # CI/CD automation
-│       ├── ci.yml           # CI pipeline (reusable ansible-ci.yml)
-│       └── release.yml      # Release Please + Galaxy publish
+├── .github/
+│   ├── ISSUE_TEMPLATE/                # Issue templates for bug, feature, task
+│   │   ├── bug_report.yml
+│   │   ├── config.yml
+│   │   ├── feature_request.yml
+│   │   └── task.yml
+│   ├── PULL_REQUEST_TEMPLATE/         # Pull request description template
+│   │   └── pull_request_template.md
+│   ├── workflows/
+│   │   ├── ci.yml                     # CI pipeline
+│   │   └── release.yml                # Release Please + Galaxy publish
+│   └── dependabot.yml                 # Dependabot configuration for GitHub Actions
 ├── .release-please-manifest.json # Release Please version manifest
 ├── release-please-config.json # Release Please configuration
 ├── defaults/
@@ -650,6 +665,8 @@ ansible-role-users/
 ├── meta/
 │   ├── main.yml             # Role metadata
 │   └── argument_specs.yml   # Argument specs validation
+├── molecule/                # Molecule testing framework
+│   └── default/             # Default testing scenario
 ├── tasks/
 │   ├── main.yml             # Main orchestration and flow control
 │   ├── assert.yml           # Variable validation
