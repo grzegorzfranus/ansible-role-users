@@ -7,7 +7,8 @@
 
 - name: Users | remove | Convert users removal dictionary to list
   ansible.builtin.set_fact:
-    users_remove_list: "{{ users_remove_list | default([]) + [{'name': username} | combine(user_data if user_data else {})] }}"
+    __users_remove_list: >-
+      {{ __users_remove_list | default([]) + [{'name': username} | combine(user_data if user_data else {})] }}
   loop: "{{ users_remove_dict | dict2items }}"
   vars:
     username: "{{ item.key }}"
@@ -22,13 +23,13 @@
     remove: "{{ item.remove_home | default(users_remove_home) }}"
     force: "{{ item.force | default(false) }}"
   become: true
-  with_items: "{{ users_remove_list }}"
+  with_items: "{{ __users_remove_list }}"
 
 - name: Users | remove | Remove user groups
   ansible.builtin.group:
     name: "{{ item.group | default(item.name) }}"
     state: absent
   become: true
-  with_items: "{{ users_remove_list }}"
+  with_items: "{{ __users_remove_list }}"
   when: >
     users_create_group | bool

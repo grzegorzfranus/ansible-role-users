@@ -7,7 +7,7 @@
 
 - name: Users | create | Convert users dictionary to list
   ansible.builtin.set_fact:
-    users_list: "{{ users_list | default([]) + [{'name': username} | combine(user_data)] }}"
+    __users_list: "{{ __users_list | default([]) + [{'name': username} | combine(user_data)] }}"
   loop: "{{ users_dict | dict2items }}"
   vars:
     username: "{{ item.key }}"
@@ -18,29 +18,29 @@
 - name: Users | create | Gather existing users from system database
   ansible.builtin.getent:
     database: passwd
-  register: users_getent
+  register: __users_getent
   changed_when: false
 
 - name: Users | create | Build existing users lookup map
   ansible.builtin.set_fact:
-    users_existing_map: "{{ users_getent.ansible_facts.getent_passwd | default({}) }}"
+    __users_existing_map: "{{ __users_getent.ansible_facts.getent_passwd | default({}) }}"
 
 - name: Users | create | Generate random passwords for users
   ansible.builtin.set_fact:
-    users_generated_passwords: >-
-      {{ users_generated_passwords | default({}) | combine({item.name:
+    __users_generated_passwords: >-
+      {{ __users_generated_passwords | default({}) | combine({item.name:
          lookup('ansible.builtin.password',
                 '/dev/null',
                 length=item.password_length | default(users_password_length),
                 chars=users_password_chars)
       }) }}
   no_log: true
-  with_items: "{{ users_list }}"
+  with_items: "{{ __users_list }}"
   when: >
     users_generate_password | bool and
     item.password is not defined and
     item.state | default('present') == 'present' and
-    (users_existing_map[item.name] is not defined or (item.force | default(users_overwrite_existing)) | bool)
+    (__users_existing_map[item.name] is not defined or (item.force | default(users_overwrite_existing)) | bool)
 
 - name: Users | create | Store generated passwords to file on Ansible controller
   delegate_to: localhost
@@ -49,9 +49,9 @@
     content: |
       # Generated Passwords - {{ ansible_facts['date_time']['iso8601'] }}
       # Host: {{ inventory_hostname }}
-      {% for user in users_list %}
-      {% if users_generated_passwords[user.name] is defined %}
-      User: {{ user.name }} Password: {{ users_generated_passwords[user.name] }}
+      {% for user in __users_list %}
+      {% if __users_generated_passwords[user.name] is defined %}
+      User: {{ user.name }} Password: {{ __users_generated_passwords[user.name] }}
       {% endif %}
       {% endfor %}
     dest: "{{ playbook_dir }}/{{ users_password_store_file_name }}"
@@ -61,17 +61,17 @@
     users_generate_password | bool and
     users_password_store_file_name != "" and
     users_store_passwords_controller | bool and
-    users_generated_passwords is defined and
-    users_generated_passwords | length > 0
+    __users_generated_passwords is defined and
+    __users_generated_passwords | length > 0
 
 - name: Users | create | Store generated passwords to file on remote host
   ansible.builtin.copy:
     content: |
       # Generated Passwords - {{ ansible_facts['date_time']['iso8601'] }}
       # Host: {{ inventory_hostname }}
-      {% for user in users_list %}
-      {% if users_generated_passwords[user.name] is defined %}
-      User: {{ user.name }} Password: {{ users_generated_passwords[user.name] }}
+      {% for user in __users_list %}
+      {% if __users_generated_passwords[user.name] is defined %}
+      User: {{ user.name }} Password: {{ __users_generated_passwords[user.name] }}
       {% endif %}
       {% endfor %}
     dest: "{{ users_password_store_remote_path }}_{{ inventory_hostname }}"
@@ -84,8 +84,8 @@
     users_generate_password | bool and
     users_password_store_remote_path != "" and
     users_store_passwords_remote | bool and
-    users_generated_passwords is defined and
-    users_generated_passwords | length > 0
+    __users_generated_passwords is defined and
+    __users_generated_passwords | length > 0
 
 - name: Users | create | Create user groups
   ansible.builtin.group:
@@ -94,7 +94,7 @@
     state: "{{ item.state | default('present') }}"
     system: "{{ item.system | default(false) }}"
   become: true
-  with_items: "{{ users_list }}"
+  with_items: "{{ __users_list }}"
   when: >
     (users_create_group | bool or item.group is defined) and
     item.state | default('present') == 'present'
@@ -120,8 +120,8 @@
     password: >-
       {{ (
            item.password | default(
-             users_generated_passwords[item.name]
-             if users_generated_passwords is defined and users_generated_passwords[item.name] is defined
+             __users_generated_passwords[item.name]
+             if __users_generated_passwords is defined and __users_generated_passwords[item.name] is defined
              else omit
            )
          ) | password_hash(users_password_hash_algorithm)
@@ -141,26 +141,28 @@
          else omit }}
     state: "{{ item.state | default('present') }}"
   become: true
-  with_items: "{{ users_list }}"
+  with_items: "{{ __users_list }}"
   vars:
-    __users_should_update: "{{ users_existing_map[item.name] is not defined or (item.force | default(users_overwrite_existing)) | bool }}"
+    __users_should_update: >-
+      {{ __users_existing_map[item.name] is not defined or
+         (item.force | default(users_overwrite_existing)) | bool }}
   no_log: "{{ item.no_log | default(true) }}"
 
 - name: Users | create | Create .ssh directories for users
   ansible.builtin.file:
-    path: "{{ item.home | default('/home/' + item.name) + '/.ssh' }}"
+    path: "{{ item.home | default(__users_home_base + '/' + item.name) + '/' + users_ssh_directory }}"
     state: directory
     owner: "{{ item.name }}"
     group: "{{ item.group | default(omit) }}"
-    mode: "0700"
+    mode: "{{ users_ssh_directory_mode }}"
   become: true
-  with_items: "{{ users_list }}"
+  with_items: "{{ __users_list }}"
   when: >
     users_manage_ssh_keys | bool and
     item.ssh_keys is defined and
     item.state | default('present') == 'present' and
     item.create_home | default(users_create_home) | bool and
-    (users_existing_map[item.name] is not defined or (item.force | default(users_overwrite_existing)) | bool)
+    (__users_existing_map[item.name] is not defined or (item.force | default(users_overwrite_existing)) | bool)
 
 - name: Users | create | Add SSH authorized keys for users
   ansible.posix.authorized_key:
@@ -170,10 +172,10 @@
     state: present
   become: true
   with_subelements:
-    - "{{ users_list }}"
+    - "{{ __users_list }}"
     - ssh_keys
     - skip_missing: true
   when: >
     users_manage_ssh_keys | bool and
     item.0.state | default('present') == 'present' and
-    (users_existing_map[item.0.name] is not defined or (item.0.force | default(users_overwrite_existing)) | bool)
+    (__users_existing_map[item.0.name] is not defined or (item.0.force | default(users_overwrite_existing)) | bool)

@@ -179,17 +179,17 @@ This role does not set any public output facts.
 | `users_ssh_directory_mode` | Permissions for .ssh directory | `"0700"` |
 | `users_ssh_authorized_keys_mode` | Permissions for authorized_keys file | `"0600"` |
 
-### System Paths and Commands
+### Internal Constants (System Paths and Commands)
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `users_home_base` | Base directory for regular user homes | `"/home"` |
-| `users_system_home_base` | Base directory for system user homes | `"/var/lib"` |
-| `users_pam_config_dir` | PAM configuration directory | `"/etc/pam.d"` |
-| `users_login_defs_path` | Path to login.defs file | `"/etc/login.defs"` |
-| `users_chage_command` | Command to set account expiration | `"chage"` |
-| `users_lock_command` | Command to lock user accounts | `"usermod --lock"` |
-| `users_unlock_command` | Command to unlock user accounts | `"usermod --unlock"` |
+| `__users_home_base` | Base directory for regular user homes | `"/home"` |
+| `__users_system_home_base` | Base directory for system user homes | `"/var/lib"` |
+| `__users_pam_config_dir` | PAM configuration directory | `"/etc/pam.d"` |
+| `__users_login_defs_path` | Path to login.defs file | `"/etc/login.defs"` |
+| `__users_chage_command` | Command to set account expiration | `"chage"` |
+| `__users_lock_command` | Command to lock user accounts | `"usermod --lock"` |
+| `__users_unlock_command` | Command to unlock user accounts | `"usermod --unlock"` |
 
 ### User Dictionaries
 
@@ -676,10 +676,9 @@ ansible-role-users/
 │   ├── main.yml             # Main orchestration and flow control
 │   ├── assert.yml           # Variable validation
 │   ├── create.yml           # User creation tasks
-│   ├── key_management.yml   # SSH key management
 │   └── remove.yml           # User removal tasks
 └── vars/
-    └── main.yml             # Common variables/constants
+    └── main.yml             # Internal variables/constants (__users_*)
 ```
 
 ## 🔧 Troubleshooting
