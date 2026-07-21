@@ -5,6 +5,13 @@ All notable changes to this User Management role will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0](https://github.com/grzegorzfranus/ansible-role-users/compare/v1.2.5...v1.3.0) (2026-07-21)
+
+
+### Features
+
+* **metadata:** add support for Ubuntu 26.04 Resolute and Debian 13 Trixie in metadata and Molecule CI ([#21](https://github.com/grzegorzfranus/ansible-role-users/issues/21)) ([a05640a](https://github.com/grzegorzfranus/ansible-role-users/commit/a05640a8caaa01166edefbc75010c50d6ae9a224))
+
 ## [1.2.5](https://github.com/grzegorzfranus/ansible-role-users/compare/v1.2.4...v1.2.5) (2026-07-21)
 
 
