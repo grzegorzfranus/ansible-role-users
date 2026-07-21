@@ -5,6 +5,13 @@ All notable changes to this User Management role will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.5](https://github.com/grzegorzfranus/ansible-role-users/compare/v1.2.4...v1.2.5) (2026-07-21)
+
+
+### Code Refactoring
+
+* **vars:** fix variable precedence and scoping in users role ([#18](https://github.com/grzegorzfranus/ansible-role-users/issues/18)) ([a895918](https://github.com/grzegorzfranus/ansible-role-users/commit/a895918185c70355da83408617ae661fd70a33ef))
+
 ## [1.2.4](https://github.com/grzegorzfranus/ansible-role-users/compare/v1.2.3...v1.2.4) (2026-07-21)
 
 
