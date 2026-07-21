@@ -4,7 +4,7 @@ argument_specs:
     short_description: "Manage system user accounts, groups, and SSH keys"
     description:
       - "Creates, modifies, and removes user accounts with password policies and SSH key support."
-      - "Supports Ubuntu 22.04/24.04, Debian 11/12, and EL 8/9."
+      - "Supports Ubuntu 22.04/24.04/26.04, Debian 11/12/13, and EL 8/9."
     author: "Grzegorz Franus"
 
     options:
@@ -98,6 +98,7 @@ argument_specs:
       users_password_chars:
         description: "Character set used for password generation."
         type: str
+        default: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()-_=+[]{}|;:,.<>?"
 
       users_password_hash_algorithm:
         description: "Password hash algorithm."
