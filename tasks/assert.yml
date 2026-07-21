@@ -6,6 +6,10 @@
 # Basic type/choice validation is handled by meta/argument_specs.yml.
 # =============================================================================
 
+# -----------------------------------------------------------------------------
+# 1. General Settings
+# -----------------------------------------------------------------------------
+
 - name: Users | assert | Validate role action parameter
   ansible.builtin.assert:
     that:
@@ -30,6 +34,10 @@
       - users_remove_home is boolean
     fail_msg: "Invalid home removal setting '{{ users_remove_home | default('undefined') }}'. Must be boolean (true/false)"
     success_msg: "Home removal setting is valid: {{ users_remove_home }}"
+
+# -----------------------------------------------------------------------------
+# 2. User Default Configuration
+# -----------------------------------------------------------------------------
 
 - name: Users | assert | Validate default shell parameter
   ansible.builtin.assert:
@@ -70,6 +78,7 @@
       - users_default_groups is sequence
     fail_msg: "Invalid default groups '{{ users_default_groups | default('undefined') }}'. Must be a list of group names"
     success_msg: "Default groups are valid with {{ users_default_groups | length }} groups: {{ users_default_groups | join(', ') }}"
+
 - name: Users | assert | Validate group append parameter
   ansible.builtin.assert:
     that:
@@ -85,6 +94,10 @@
       - users_overwrite_existing is boolean
     fail_msg: "Invalid overwrite existing setting '{{ users_overwrite_existing | default('undefined') }}'. Must be boolean (true/false)"
     success_msg: "Overwrite existing setting is valid: {{ users_overwrite_existing }}"
+
+# -----------------------------------------------------------------------------
+# 3. Password Generation Settings
+# -----------------------------------------------------------------------------
 
 - name: Users | assert | Validate password generation parameter
   ansible.builtin.assert:
@@ -159,6 +172,10 @@
       Must be one of: sha512 (recommended), sha256
     success_msg: "Password hash algorithm is valid: {{ users_password_hash_algorithm }}"
 
+# -----------------------------------------------------------------------------
+# 4. SSH Key Management
+# -----------------------------------------------------------------------------
+
 - name: Users | assert | Validate SSH key management parameter
   ansible.builtin.assert:
     that:
@@ -200,6 +217,10 @@
     success_msg: >-
       SSH directory settings are valid: {{ users_ssh_directory }}/{{ users_ssh_authorized_keys_file }}
       with modes {{ users_ssh_directory_mode }}/{{ users_ssh_authorized_keys_mode }}
+
+# -----------------------------------------------------------------------------
+# 5. User Definitions
+# -----------------------------------------------------------------------------
 
 - name: Users | assert | Validate users dictionary parameter
   ansible.builtin.assert:
