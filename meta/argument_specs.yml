@@ -189,7 +189,7 @@ argument_specs:
           - "0400"
 
       users_sudoers_default_rule:
-        description: "Default sudoers privilege specification for users with shorthand sudoers enabled."
+        description: "Default sudo privilege specification used for shorthand sudoers or when rules are omitted."
         type: str
         default: "ALL=(ALL) NOPASSWD:ALL"
 

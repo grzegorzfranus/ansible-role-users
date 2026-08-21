@@ -324,19 +324,25 @@
           (item.value.sudoers.state is not defined or item.value.sudoers.state in ['present', 'absent']) and
           (item.value.sudoers.rules is not defined or
            (item.value.sudoers.rules is sequence and
+            item.value.sudoers.rules is not string and
             item.value.sudoers.rules | length > 0 and
             (item.value.sudoers.rules | join('')) is not search('\n'))) and
           (item.value.sudoers.defaults is not defined or
            (item.value.sudoers.defaults is sequence and
+            item.value.sudoers.defaults is not string and
             (item.value.sudoers.defaults | join('')) is not search('\n'))) and
           (item.value.sudoers.extra_lines is not defined or
            (item.value.sudoers.extra_lines is sequence and
+            item.value.sudoers.extra_lines is not string and
             (item.value.sudoers.extra_lines | join('')) is not search('\n')))
         )
     fail_msg: >-
       Invalid sudoers configuration for user '{{ item.key }}'.
-      Must be a boolean or valid mapping (enabled: bool, state: present/absent, rules: list, defaults: list, extra_lines: list),
-      must not contain newlines in rules/defaults/extra_lines, and filename '{{ users_sudoers_file_prefix }}{{ item.key }}' must not contain a dot.
+      Must be a boolean or valid mapping (enabled: bool, state: present/absent,
+      rules: list of strings, defaults: list of strings, extra_lines: list of strings),
+      must not be a bare string for rules/defaults/extra_lines,
+      must not contain newlines in rules/defaults/extra_lines,
+      and filename '{{ users_sudoers_file_prefix }}{{ item.key }}' must not contain a dot.
     success_msg: "Sudoers configuration for user '{{ item.key }}' is valid"
   loop: "{{ users_dict | dict2items | selectattr('value.sudoers', 'defined') | list }}"
   loop_control:
@@ -344,3 +350,13 @@
   when:
     - users_manage_sudoers | bool
     - users_dict | length > 0
+
+- name: Users | assert | Warn when per-user sudoers is configured but master switch is disabled
+  ansible.builtin.debug:
+    msg: >-
+      WARNING: Sudoers configuration is defined for users in 'users_dict',
+      but 'users_manage_sudoers' is false. Sudoers drop-in files will NOT be managed.
+      Set 'users_manage_sudoers: true' to enable sudoers drop-in management.
+  when:
+    - not (users_manage_sudoers | bool)
+    - (users_dict | dict2items | selectattr('value.sudoers', 'defined') | list | length) > 0

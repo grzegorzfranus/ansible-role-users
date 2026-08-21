@@ -14,7 +14,10 @@
           {
             'name': item.key,
             'enabled': (item.value.sudoers if item.value.sudoers is boolean else item.value.sudoers.enabled | default(true)) | bool,
-            'state': (item.value.sudoers.state | default('present')) if item.value.sudoers is mapping else 'present',
+            'state': (
+              'absent' if (item.value.state | default('present') != 'present')
+              else ((item.value.sudoers.state | default('present')) if item.value.sudoers is mapping else 'present')
+            ),
             'rules': (item.value.sudoers.rules | default([users_sudoers_default_rule])) if item.value.sudoers is mapping else [users_sudoers_default_rule],
             'defaults': (item.value.sudoers.defaults | default([])) if item.value.sudoers is mapping else [],
             'extra_lines': (item.value.sudoers.extra_lines | default([])) if item.value.sudoers is mapping else [],
