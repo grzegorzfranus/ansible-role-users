@@ -1,3 +1,4 @@
+---
 # =============================================================================
 # Ansible Role: Users - Molecule Verification Playbook
 # =============================================================================
@@ -9,6 +10,8 @@
 # - SSH key setup
 # - Home directory creation and permissions
 # - User removal
+# - Password expiry
+# - Sudoers drop-in file generation, content, permissions, purge, and validation
 #
 # Flow:
 # 1. Load variables and gather facts
@@ -18,9 +21,9 @@
 # 5. Check home directories
 # 6. Verify user removal
 # 7. Verify password expiry
+# 8. Verify sudoers drop-in files
 # =============================================================================
 
----
 # -----------------------------------------------------------------------------
 # 1. Environment Setup
 # -----------------------------------------------------------------------------
@@ -161,3 +164,110 @@
       register: _passwd_min_age_result_
       changed_when: false
       ignore_errors: true
+
+    # -----------------------------------------------------------------------------
+    # 8. Sudoers Drop-In Verification
+    # -----------------------------------------------------------------------------
+    - name: Verify | Stat testuser1 sudoers drop-in file
+      ansible.builtin.stat:
+        path: /etc/sudoers.d/testuser1
+      register: __verify_sudoers_testuser1
+
+    - name: Verify | Assert testuser1 sudoers drop-in exists with 0440 permissions
+      ansible.builtin.assert:
+        that:
+          - __verify_sudoers_testuser1.stat.exists
+          - __verify_sudoers_testuser1.stat.mode == '0440'
+          - __verify_sudoers_testuser1.stat.pw_name == 'root'
+        fail_msg: "testuser1 sudoers drop-in file missing or has invalid permissions/ownership"
+        success_msg: "testuser1 sudoers drop-in file verified (mode 0440, owner root)"
+
+    - name: Verify | Read testuser1 sudoers file content
+      ansible.builtin.slurp:
+        src: /etc/sudoers.d/testuser1
+      register: __verify_sudoers_testuser1_content
+
+    - name: Verify | Assert testuser1 sudoers file contains default rule
+      ansible.builtin.assert:
+        that:
+          - "'testuser1 ALL=(ALL) NOPASSWD:ALL' in (__verify_sudoers_testuser1_content.content | b64decode)"
+        fail_msg: "testuser1 sudoers file does not contain expected default rule"
+        success_msg: "testuser1 sudoers file contains 'testuser1 ALL=(ALL) NOPASSWD:ALL'"
+
+    - name: Verify | Stat testuser2 sudoers drop-in file
+      ansible.builtin.stat:
+        path: /etc/sudoers.d/testuser2
+      register: __verify_sudoers_testuser2
+
+    - name: Verify | Assert testuser2 sudoers drop-in exists with 0440 permissions
+      ansible.builtin.assert:
+        that:
+          - __verify_sudoers_testuser2.stat.exists
+          - __verify_sudoers_testuser2.stat.mode == '0440'
+          - __verify_sudoers_testuser2.stat.pw_name == 'root'
+        fail_msg: "testuser2 sudoers drop-in file missing or has invalid permissions/ownership"
+        success_msg: "testuser2 sudoers drop-in file verified (mode 0440, owner root)"
+
+    - name: Verify | Read testuser2 sudoers file content
+      ansible.builtin.slurp:
+        src: /etc/sudoers.d/testuser2
+      register: __verify_sudoers_testuser2_content
+
+    - name: Verify | Assert testuser2 sudoers file contains custom rules and defaults
+      ansible.builtin.assert:
+        that:
+          - "'# Restricted service lifecycle management' in (__verify_sudoers_testuser2_content.content | b64decode)"
+          - "'Defaults:testuser2 !requiretty' in (__verify_sudoers_testuser2_content.content | b64decode)"
+          - "'testuser2 ALL=(root) NOPASSWD: /usr/bin/systemctl restart nginx' in (__verify_sudoers_testuser2_content.content | b64decode)"
+          - "'testuser2 ALL=(root) NOPASSWD: /usr/bin/systemctl status nginx' in (__verify_sudoers_testuser2_content.content | b64decode)"
+        fail_msg: "testuser2 sudoers file does not contain expected custom rules, defaults, or comment"
+        success_msg: "testuser2 sudoers file custom rules, defaults, and comment verified"
+
+    - name: Verify | Stat purged testuser3 sudoers drop-in file
+      ansible.builtin.stat:
+        path: /etc/sudoers.d/testuser3
+      register: __verify_sudoers_testuser3
+
+    - name: Verify | Assert testuser3 sudoers drop-in was purged
+      ansible.builtin.assert:
+        that:
+          - not __verify_sudoers_testuser3.stat.exists
+        fail_msg: "testuser3 sudoers drop-in was not purged when disabled"
+        success_msg: "testuser3 sudoers drop-in successfully purged"
+
+    - name: Verify | Stat removed testuser_remove sudoers drop-in file
+      ansible.builtin.stat:
+        path: /etc/sudoers.d/testuser_remove
+      register: __verify_sudoers_testuser_remove
+
+    - name: Verify | Assert testuser_remove sudoers drop-in was deleted
+      ansible.builtin.assert:
+        that:
+          - not __verify_sudoers_testuser_remove.stat.exists
+        fail_msg: "testuser_remove sudoers drop-in was not deleted on user removal"
+        success_msg: "testuser_remove sudoers drop-in successfully deleted"
+
+    - name: Verify | Run visudo syntax validation
+      ansible.builtin.command: visudo -c
+      register: __verify_visudo
+      changed_when: false
+
+    - name: Verify | Assert visudo syntax validation passed
+      ansible.builtin.assert:
+        that:
+          - __verify_visudo.rc == 0
+        fail_msg: "visudo syntax validation failed"
+        success_msg: "visudo syntax validation passed successfully (rc=0)"
+
+    - name: Verify | Check sudo permissions for testuser1
+      ansible.builtin.command: sudo -l -U testuser1
+      register: __verify_sudo_list_testuser1
+      changed_when: false
+
+    - name: Verify | Assert testuser1 has active NOPASSWD sudo access
+      ansible.builtin.assert:
+        that:
+          - __verify_sudo_list_testuser1.rc == 0
+          - "'NOPASSWD' in __verify_sudo_list_testuser1.stdout"
+        fail_msg: "testuser1 does not have expected NOPASSWD sudo permissions"
+        success_msg: "testuser1 active NOPASSWD sudo permissions verified"

@@ -1,0 +1,14 @@
+#jinja2: trim_blocks: True, lstrip_blocks: True
+{{ ansible_managed | comment }}
+{% if __users_sudoers_entry.comment is defined and __users_sudoers_entry.comment | length > 0 %}
+# {{ __users_sudoers_entry.comment }}
+{% endif %}
+{% for line in __users_sudoers_entry.extra_lines | default([]) %}
+{{ line }}
+{% endfor %}
+{% for entry in __users_sudoers_entry.defaults | default([]) %}
+Defaults:{{ __users_sudoers_entry.name }} {{ entry }}
+{% endfor %}
+{% for rule in __users_sudoers_entry.rules | default([users_sudoers_default_rule]) %}
+{{ __users_sudoers_entry.name }} {{ rule }}
+{% endfor %}

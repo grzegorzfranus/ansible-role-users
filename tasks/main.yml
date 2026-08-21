@@ -3,7 +3,7 @@
 # Ansible Role: Users - Tasks: Main
 # =============================================================================
 # Orchestrates role execution in order.
-# Flow: vars → assert → create → remove
+# Flow: vars → assert → create → sudoers → remove
 # =============================================================================
 
 - name: Users | include_vars | Gather OS specific variables
@@ -43,6 +43,17 @@
     - create
     - users
     - setup
+
+- name: Users | sudoers | Manage per-user sudoers drop-in files
+  ansible.builtin.import_tasks: sudoers.yml
+  when: >
+    users_role_action in ['all', 'create'] and
+    users_manage_sudoers | bool and
+    users_dict | length > 0
+  tags:
+    - sudoers
+    - users
+    - configure
 
 - name: Users | remove | Remove user accounts
   ansible.builtin.include_tasks: remove.yml

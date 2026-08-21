@@ -239,3 +239,108 @@
       Invalid users remove dictionary '{{ users_remove_dict | default('undefined') }}'.
       Must be a dictionary/mapping of username: removal_config pairs
     success_msg: "Users remove dictionary is valid with {{ users_remove_dict | length }} user(s) to remove"
+
+# -----------------------------------------------------------------------------
+# 6. Sudoers Management
+# -----------------------------------------------------------------------------
+
+- name: Users | assert | Validate users_manage_sudoers parameter
+  ansible.builtin.assert:
+    that:
+      - users_manage_sudoers is defined
+      - users_manage_sudoers is boolean
+    fail_msg: "users_manage_sudoers must be a boolean (true/false)"
+    success_msg: "users_manage_sudoers is valid: {{ users_manage_sudoers }}"
+
+- name: Users | assert | Validate users_sudoers_directory parameter
+  ansible.builtin.assert:
+    that:
+      - users_sudoers_directory is defined
+      - users_sudoers_directory is string
+      - users_sudoers_directory | length > 0
+      - users_sudoers_directory is match('^/')
+    fail_msg: "users_sudoers_directory must be an absolute path string (e.g. '/etc/sudoers.d')"
+    success_msg: "users_sudoers_directory is valid: {{ users_sudoers_directory }}"
+  when: users_manage_sudoers | bool
+
+- name: Users | assert | Validate users_sudoers_file_prefix parameter
+  ansible.builtin.assert:
+    that:
+      - users_sudoers_file_prefix is defined
+      - users_sudoers_file_prefix is string
+      - users_sudoers_file_prefix is match('^[a-zA-Z0-9_-]*$')
+    fail_msg: "users_sudoers_file_prefix must match pattern '^[a-zA-Z0-9_-]*$' (cannot contain dots or special characters)"
+    success_msg: "users_sudoers_file_prefix is valid: '{{ users_sudoers_file_prefix }}'"
+  when: users_manage_sudoers | bool
+
+- name: Users | assert | Validate users_sudoers_file_mode parameter
+  ansible.builtin.assert:
+    that:
+      - users_sudoers_file_mode is defined
+      - users_sudoers_file_mode is string
+      - users_sudoers_file_mode in ["0440", "0400"]
+    fail_msg: "users_sudoers_file_mode must be one of: '0440', '0400'"
+    success_msg: "users_sudoers_file_mode is valid: {{ users_sudoers_file_mode }}"
+  when: users_manage_sudoers | bool
+
+- name: Users | assert | Validate users_sudoers_default_rule parameter
+  ansible.builtin.assert:
+    that:
+      - users_sudoers_default_rule is defined
+      - users_sudoers_default_rule is string
+      - users_sudoers_default_rule | length > 0
+      - users_sudoers_default_rule is not search('\n')
+    fail_msg: "users_sudoers_default_rule must be a non-empty single-line string without newlines"
+    success_msg: "users_sudoers_default_rule is valid: {{ users_sudoers_default_rule }}"
+  when: users_manage_sudoers | bool
+
+- name: Users | assert | Validate users_sudoers_validate parameter
+  ansible.builtin.assert:
+    that:
+      - users_sudoers_validate is defined
+      - users_sudoers_validate is boolean
+    fail_msg: "users_sudoers_validate must be a boolean (true/false)"
+    success_msg: "users_sudoers_validate is valid: {{ users_sudoers_validate }}"
+  when: users_manage_sudoers | bool
+
+- name: Users | assert | Validate users_sudoers_purge_disabled parameter
+  ansible.builtin.assert:
+    that:
+      - users_sudoers_purge_disabled is defined
+      - users_sudoers_purge_disabled is boolean
+    fail_msg: "users_sudoers_purge_disabled must be a boolean (true/false)"
+    success_msg: "users_sudoers_purge_disabled is valid: {{ users_sudoers_purge_disabled }}"
+  when: users_manage_sudoers | bool
+
+- name: Users | assert | Validate per-user sudoers configuration structure
+  ansible.builtin.assert:
+    that:
+      - item.value.sudoers is boolean or item.value.sudoers is mapping
+      - (users_sudoers_file_prefix ~ item.key) is not search('\.')
+      - >
+        (item.value.sudoers is boolean) or
+        (
+          (item.value.sudoers.enabled is not defined or item.value.sudoers.enabled is boolean) and
+          (item.value.sudoers.state is not defined or item.value.sudoers.state in ['present', 'absent']) and
+          (item.value.sudoers.rules is not defined or
+           (item.value.sudoers.rules is sequence and
+            item.value.sudoers.rules | length > 0 and
+            (item.value.sudoers.rules | join('')) is not search('\n'))) and
+          (item.value.sudoers.defaults is not defined or
+           (item.value.sudoers.defaults is sequence and
+            (item.value.sudoers.defaults | join('')) is not search('\n'))) and
+          (item.value.sudoers.extra_lines is not defined or
+           (item.value.sudoers.extra_lines is sequence and
+            (item.value.sudoers.extra_lines | join('')) is not search('\n')))
+        )
+    fail_msg: >-
+      Invalid sudoers configuration for user '{{ item.key }}'.
+      Must be a boolean or valid mapping (enabled: bool, state: present/absent, rules: list, defaults: list, extra_lines: list),
+      must not contain newlines in rules/defaults/extra_lines, and filename '{{ users_sudoers_file_prefix }}{{ item.key }}' must not contain a dot.
+    success_msg: "Sudoers configuration for user '{{ item.key }}' is valid"
+  loop: "{{ users_dict | dict2items | selectattr('value.sudoers', 'defined') | list }}"
+  loop_control:
+    label: "{{ item.key }}"
+  when:
+    - users_manage_sudoers | bool
+    - users_dict | length > 0

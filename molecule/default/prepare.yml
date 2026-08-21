@@ -1,3 +1,4 @@
+---
 # =============================================================================
 # Ansible Role: Users - Molecule Preparation Playbook
 # =============================================================================
@@ -10,9 +11,9 @@
 # Flow:
 # 1. Fix system file permissions
 # 2. Validate system state
+# 3. Pre-create test sudoers drop-in files for purge/removal validation
 # =============================================================================
 
----
 # -----------------------------------------------------------------------------
 # 1. System Preparation
 # -----------------------------------------------------------------------------
@@ -78,3 +79,24 @@
         comment: "Test Remove User"
         state: present
         createhome: true
+
+    - name: Prepare | Ensure sudoers.d directory exists
+      ansible.builtin.file:
+        path: /etc/sudoers.d
+        state: directory
+        owner: root
+        group: root
+        mode: "0750"
+
+    - name: Prepare | Pre-create sudoers drop-in files for removal and purge testing
+      ansible.builtin.copy:
+        content: |
+          # Dummy sudoers for purge testing
+          {{ item }} ALL=(ALL) NOPASSWD:ALL
+        dest: "/etc/sudoers.d/{{ item }}"
+        owner: root
+        group: root
+        mode: "0440"
+      loop:
+        - testuser_remove
+        - testuser3

@@ -1,3 +1,4 @@
+---
 # =============================================================================
 # Ansible Role: Users - Molecule Convergence Playbook
 # =============================================================================
@@ -13,7 +14,6 @@
 # 3. Apply Users role with test variables
 # =============================================================================
 
----
 # -----------------------------------------------------------------------------
 # 1. Pre-Tasks Setup
 # -----------------------------------------------------------------------------
@@ -65,6 +65,7 @@
     users_generate_password: true
     users_password_length: 16
     users_manage_ssh_keys: true
+    users_manage_sudoers: true
 
     # Test user definitions
     users_dict:
@@ -75,6 +76,7 @@
         password: "Test123Password"
         ssh_keys:
           - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJVnvT4/XjbXVnF6WEyWgUUwpVS9RJYVDCl0b0z3wuNO molecule-test-key"
+        sudoers: true
 
       testuser2:
         comment: "Test User 2"
@@ -82,16 +84,27 @@
         system: true
         shell: "/bin/false"
         home: "/opt/testuser2"
+        sudoers:
+          enabled: true
+          state: present
+          comment: "Restricted service lifecycle management"
+          defaults:
+            - "!requiretty"
+          rules:
+            - "ALL=(root) NOPASSWD: /usr/bin/systemctl restart nginx"
+            - "ALL=(root) NOPASSWD: /usr/bin/systemctl status nginx"
 
       testuser3:
         comment: "Test User 3"
         uid: 2003
         password_expire_min: 7
         password_expire_max: 60
+        sudoers:
+          enabled: false
 
     users_remove_dict:
       testuser_remove:
         remove_home: true
 
   roles:
-    - role: ../../.. # noqa role-name[path]
+    - role: ../../..  # noqa role-name[path]

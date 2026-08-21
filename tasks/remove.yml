@@ -33,3 +33,14 @@
   with_items: "{{ __users_remove_list }}"
   when: >
     users_create_group | bool
+
+- name: Users | remove | Remove per-user sudoers drop-in files
+  ansible.builtin.file:
+    path: "{{ users_sudoers_directory }}/{{ users_sudoers_file_prefix }}{{ item.name }}"
+    state: absent
+  become: true
+  loop: "{{ __users_remove_list | default([]) }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when:
+    - users_manage_sudoers | bool
