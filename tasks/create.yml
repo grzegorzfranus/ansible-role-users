@@ -116,17 +116,22 @@
     move_home: "{{ (item.move_home | default(false)) if __users_should_update else omit }}"
     system: "{{ (item.system | default(false)) if __users_should_update else omit }}"
     force: "{{ item.force | default(false) }}"
-    remove: "{{ item.remove | default(false) }}"
     password: >-
-      {{ (
-           item.password | default(
-             __users_generated_passwords[item.name]
-             if __users_generated_passwords is defined and __users_generated_passwords[item.name] is defined
-             else omit
-           )
-         ) | password_hash(users_password_hash_algorithm)
-         if __users_should_update
-         else omit }}
+      {{
+        (
+          item.password | default(
+            __users_generated_passwords[item.name]
+            if __users_generated_passwords is defined and __users_generated_passwords[item.name] is defined
+            else ''
+          )
+        ) | password_hash(users_password_hash_algorithm)
+        if (
+          __users_should_update and
+          (item.state | default('present') == 'present') and
+          (item.password is defined or (__users_generated_passwords is defined and __users_generated_passwords[item.name] is defined))
+        )
+        else omit
+      }}
     update_password: >-
       {{ item.update_password |
          default(('always' if __users_should_update else 'on_create')) }}
@@ -139,6 +144,7 @@
       {{ (item.password_expire_min | default(users_password_min_age))
          if __users_should_update
          else omit }}
+    remove: "{{ item.remove | default(false) }}"
     state: "{{ item.state | default('present') }}"
   become: true
   with_items: "{{ __users_list }}"

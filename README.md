@@ -4,11 +4,12 @@
 |------|-------|--|-------|
 |[![Source Code](https://img.shields.io/badge/source-github-blue.svg)](https://github.com/grzegorzfranus/ansible-role-users)|[![Version](https://img.shields.io/github/v/release/grzegorzfranus/ansible-role-users)](https://github.com/grzegorzfranus/ansible-role-users/releases)|[![CI](https://github.com/grzegorzfranus/ansible-role-users/actions/workflows/ci.yml/badge.svg)](https://github.com/grzegorzfranus/ansible-role-users/actions/workflows/ci.yml)|[![Repository License](https://img.shields.io/badge/license-apache2.0-brightgreen.svg)](LICENSE)|
 
-This Ansible role manages user accounts on Linux systems. It provides capabilities for creating users with custom home directories, shells, comments, and other parameters. The role also includes secure password generation and optional SSH key management.
+This Ansible role manages user accounts on Linux systems. It provides capabilities for creating users with custom home directories, shells, comments, password policies, per-user sudoers privilege drop-in files in `/etc/sudoers.d/`, and SSH authorized keys management.
 
 ## ✨ Features
 
 - 👥 **User Account Management**: Create, modify, and remove user accounts with full control
+- 🛡️ **Per-User Sudoers**: Validated `/etc/sudoers.d` drop-in files generated per user (boolean shorthand or custom rules)
 - 🔐 **Secure Password Generation**: Cryptographically secure random password creation
 - 🔑 **SSH Key Management**: Automated SSH authorized_keys deployment and management
 - 🏠 **Home Directory Control**: Flexible home directory creation, customization, and cleanup
@@ -22,10 +23,11 @@ This Ansible role manages user accounts on Linux systems. It provides capabiliti
 ## 🎯 Main Actions
 
 - Create and manage users with customizable parameters
+- Generate validated per-user sudoers drop-in files in `/etc/sudoers.d/`
 - Securely generate random passwords
 - Manage SSH authorized keys for users
 - Set password expiration policies
-- Remove users with optional home directory removal
+- Remove users with optional home directory and sudoers drop-in cleanup
 
 ## 📋 Requirements
 
@@ -56,7 +58,7 @@ List of officially supported operating systems for this role:
 
 ### Ansible version
 
-Ansible >= 2.17 (tested up to 2.20)
+Ansible >= 2.17 (tested up to 2.21)
 
 ### Python version
 
@@ -78,7 +80,7 @@ This role requires root access for user management tasks. Make sure you are usin
 
 ## 🚀 Quick Start
 
-### 1. Basic User Creation
+### 1. Basic User Creation with Sudo Access
 
 ```yaml
 ---
@@ -88,10 +90,12 @@ This role requires root access for user management tasks. Make sure you are usin
   roles:
     - role: grzegorzfranus.users
       vars:
+        users_manage_sudoers: true
         users_dict:
           johndoe:
             comment: "John Doe"
             groups: ["sudo"]
+            sudoers: true
 ```
 
 ### 2. Run the playbook
@@ -119,6 +123,13 @@ users_password_min_age: 0
 
 # SSH key management
 users_manage_ssh_keys: false
+
+# Sudoers management
+users_manage_sudoers: false
+users_sudoers_directory: "/etc/sudoers.d"
+users_sudoers_file_mode: "0440"
+users_sudoers_validate: true
+users_sudoers_purge_disabled: true
 ```
 
 ## 📌 Role Properties
@@ -132,7 +143,7 @@ users_manage_ssh_keys: false
 
 ## 📤 Role Output
 
-This role does not set any public output facts.
+This role does not set any public output facts. All internal facts use the double-underscore prefix.
 
 ## 📊 Variables
 
@@ -140,7 +151,7 @@ This role does not set any public output facts.
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `users_role_action` | Role execution control (Options: 'all', 'create', 'remove') | `"all"` |
+| `users_role_action` | Role execution control (Options: `'all'`, `'create'`, `'remove'`) | `"all"` |
 | `users_create_home` | Whether to create home directories for new users | `true` |
 | `users_remove_home` | Whether to remove home directories when removing users | `true` |
 
@@ -167,19 +178,31 @@ This role does not set any public output facts.
 | `users_password_store_remote_path` | Path to store generated passwords on remote hosts | `""` |
 | `users_store_passwords_remote` | Whether to store passwords on remote hosts | `false` |
 | `users_password_chars` | Character set used for password generation | `"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()-_=+[]{}|;:,.<>?"` |
-| `users_password_hash_algorithm` | Password hashing algorithm (sha512, sha256) | `"sha512"` |
+| `users_password_hash_algorithm` | Password hashing algorithm (`sha512`, `sha256`) | `"sha512"` |
 
 ### SSH Key Management
 
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `users_manage_ssh_keys` | Whether to manage SSH keys for users | `false` |
-| `users_ssh_key_type` | Default SSH key type (rsa, ed25519, ecdsa, dsa) | `"ed25519"` |
-| `users_ssh_key_bits` | Key size for RSA keys (1024, 2048, 4096) | `4096` |
+| `users_ssh_key_type` | Default SSH key type (`rsa`, `ed25519`, `ecdsa`, `dsa`) | `"ed25519"` |
+| `users_ssh_key_bits` | Key size for RSA keys (`1024`, `2048`, `4096`) | `4096` |
 | `users_ssh_directory` | Path to SSH directory within user home | `".ssh"` |
 | `users_ssh_authorized_keys_file` | Path to authorized_keys file | `".ssh/authorized_keys"` |
 | `users_ssh_directory_mode` | Permissions for .ssh directory | `"0700"` |
 | `users_ssh_authorized_keys_mode` | Permissions for authorized_keys file | `"0600"` |
+
+### Sudoers Management
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `users_manage_sudoers` | Master switch for per-user sudoers drop-in file management | `false` |
+| `users_sudoers_directory` | Directory holding per-user sudoers drop-in files | `"/etc/sudoers.d"` |
+| `users_sudoers_file_prefix` | Optional filename prefix controlling include order (e.g. `"10-"`) | `""` |
+| `users_sudoers_file_mode` | Permissions of generated drop-in files (`"0440"`, `"0400"`) | `"0440"` |
+| `users_sudoers_default_rule` | Privilege specification used when a user only enables sudoers without custom rules | `"ALL=(ALL) NOPASSWD:ALL"` |
+| `users_sudoers_validate` | Validate every rendered file with `visudo -cf %s` before installing | `true` |
+| `users_sudoers_purge_disabled` | Remove drop-in file when user sudoers block is disabled or absent | `true` |
 
 ### Internal Constants (System Paths and Commands)
 
@@ -225,9 +248,11 @@ Each user in the `users_dict` can have the following parameters:
 | `password_expire_min` | Minimum password age in days | `users_password_min_age` |
 | `expires` | Account expiration date (YYYY-MM-DD) | (never expires) |
 | `ssh_keys` | List of SSH authorized keys | (none) |
+| `sudoers` | Per-user sudoers configuration (boolean shorthand or dictionary) | (none) |
 | `remove` | Whether to remove home dir when removing user | `false` |
 | `no_log` | Whether to suppress logging of task | `true` |
 | `password_length` | Custom length for generated password | `users_password_length` |
+
 ## ♻️ Overwrite Behavior for Existing Users
 
 By default, the role does not modify existing users. This means their password, shell, groups, and other attributes remain unchanged unless you explicitly enable overwriting:
@@ -237,6 +262,82 @@ By default, the role does not modify existing users. This means their password, 
 
 When neither is set, only new users are created and existing users are left intact. Password updates use `update_password: on_create` unless overwrite is enabled for the user.
 
+## 🔐 Per-User Sudoers Management
+
+When `users_manage_sudoers: true` is enabled, the role creates drop-in configuration files in `/etc/sudoers.d/` for users configured in `users_dict`.
+
+### Configuration Formats
+
+1. **Boolean Shorthand**: Set `sudoers: true` to generate a standard passwordless full sudo rule, or `sudoers: false` to disable sudoers for that user:
+   ```yaml
+   users_dict:
+     admin:
+       comment: "System Administrator"
+       sudoers: true
+     guest:
+       comment: "Guest Account"
+       sudoers: false
+   ```
+   Renders file `/etc/sudoers.d/admin`:
+   ```text
+   # Ansible managed
+   admin ALL=(ALL) NOPASSWD:ALL
+   ```
+
+2. **Full Dictionary Specification**: Use a dictionary for granular control over rules, defaults, and aliases:
+   ```yaml
+   users_dict:
+     deployer:
+       comment: "CI/CD Deployment Service Account"
+       sudoers:
+         enabled: true
+         state: present
+         comment: "Restricted service management"
+         extra_lines:
+           - "Cmnd_Alias NGINX_OPS = /usr/bin/systemctl restart nginx, /usr/bin/systemctl reload nginx"
+         defaults:
+           - "!requiretty"
+         rules:
+           - "ALL=(root) NOPASSWD: NGINX_OPS"
+           - "ALL=(root) NOPASSWD: /usr/bin/systemctl status nginx"
+   ```
+   Renders file `/etc/sudoers.d/deployer`:
+   ```text
+   # Ansible managed
+   # Restricted service management
+   Cmnd_Alias NGINX_OPS = /usr/bin/systemctl restart nginx, /usr/bin/systemctl reload nginx
+   Defaults:deployer !requiretty
+   deployer ALL=(root) NOPASSWD: NGINX_OPS
+   deployer ALL=(root) NOPASSWD: /usr/bin/systemctl status nginx
+   ```
+
+3. **Disabling and Purging Drop-Ins**: Set `enabled: false`, `state: absent`, or `sudoers: false` to purge existing drop-in files:
+   ```yaml
+   users_dict:
+     legacyuser:
+       sudoers:
+         enabled: false
+   ```
+
+### Sudoers Dictionary Schema
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `enabled` | `bool` | `true` | Master toggle for generating the drop-in file for this user |
+| `state` | `str` | `"present"` | State of the drop-in file (`"present"` or `"absent"`) |
+| `rules` | `list[str]` | `[users_sudoers_default_rule]` | List of sudo privilege specifications appended after username (must be a list of strings) |
+| `defaults` | `list[str]` | `[]` | List of sudo Defaults entries rendered as `Defaults:<username> <entry>` (must be a list of strings) |
+| `extra_lines` | `list[str]` | `[]` | List of raw lines (aliases, comments) rendered before Defaults and rules (must be a list of strings) |
+| `comment` | `str` | `""` | Optional comment rendered in the drop-in file header |
+
+### Security, Directory Normalization & Naming Constraints
+
+- **Directory Ownership & Normalization**: The role automatically normalizes ownership and permissions of the drop-in directory (`users_sudoers_directory`) to `root:root 0750`.
+- **Permissions**: Drop-in files are created with mode `0440` (or `0400`) owned by `root:root`. Sudo ignores files with insecure permissions.
+- **Validation**: All rendered files are automatically checked with `visudo -cf %s` before deployment (`users_sudoers_validate: true`).
+- **Backup Copies**: The role runs with `backup: true`, writing rotated copies into `/etc/sudoers.d/` on change. Sudo safely ignores these files because their names contain dots and end with `~`, though they accumulate over time unless cleaned up.
+- **Filename Validation**: The combined filename (`users_sudoers_file_prefix ~ username`) must not contain a dot (`.`), as sudo strictly ignores files containing dots.
+- **Injection Protection**: Runtime assertions verify that `rules`, `defaults`, and `extra_lines` are lists of strings and do not contain embedded newline characters.
 
 ## 🔐 Secure Password Management
 
@@ -302,26 +403,34 @@ The role uses the following tags for task selection:
 | `validate` | Variable validation tasks |
 | `check` | Verification and checking tasks |
 | `create` | Tasks related to user creation |
-| `users` | All user-related tasks (both creation and removal) |
+| `users` | All user-related tasks (creation, removal, sudoers) |
+| `sudoers` | Per-user sudoers drop-in file management |
+| `configure` | Sudoers and user configuration tasks |
 | `cleanup` | Tasks for user account removal |
 | `remove` | Tasks specifically for removing users |
 
 These tags can be used to selectively run parts of the role, for example:
 
-```yaml
+```bash
 # Only run user creation tasks
 ansible-playbook playbook.yml --tags "create"
+
+# Only manage sudoers drop-in files
+ansible-playbook playbook.yml --tags "sudoers"
 
 # Skip user removal tasks
 ansible-playbook playbook.yml --skip-tags "remove,cleanup"
 ```
-## Example Playbooks
+
+## 📖 Example Playbooks
+
 ### Creating Users with Dictionary Format
 
 ```yaml
 - hosts: all
+  become: true
   roles:
-    - role: ansible-role-users
+    - role: grzegorzfranus.users
       users_dict:
         johndoe:
           comment: "John Doe"
@@ -333,7 +442,7 @@ ansible-playbook playbook.yml --skip-tags "remove,cleanup"
           shell: "/bin/zsh"
           password: "secure_password"  # Will be properly hashed
           home: "/opt/custom/janedoe"
-          
+
         devuser:
           comment: "Developer User"
           groups: ["developers"]
@@ -342,154 +451,199 @@ ansible-playbook playbook.yml --skip-tags "remove,cleanup"
             - "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC/xxxxxxxx user@example.com"
 ```
 
+### Granting Restricted Sudo Privileges
+
+```yaml
+- hosts: all
+  become: true
+  roles:
+    - role: grzegorzfranus.users
+      vars:
+        users_manage_sudoers: true
+        users_dict:
+          admin:
+            comment: "System Administrator"
+            sudoers: true  # Full passwordless sudo
+
+          deployer:
+            comment: "CI/CD Service Account"
+            sudoers:
+              comment: "Restricted systemd lifecycle operations"
+              extra_lines:
+                - "Cmnd_Alias NGINX_OPS = /usr/bin/systemctl restart nginx, /usr/bin/systemctl reload nginx"
+              defaults:
+                - "!requiretty"
+              rules:
+                - "ALL=(root) NOPASSWD: NGINX_OPS"
+                - "ALL=(root) NOPASSWD: /usr/bin/systemctl status nginx"
+```
+
 ### Removing Users with Dictionary Format
 
 ```yaml
 - hosts: all
+  become: true
   roles:
-    - role: ansible-role-users
-      users_role_action: "remove"
-      users_remove_dict:
-        olduser:
-          remove_home: true
-        tempuser: {}  # Use default settings
+    - role: grzegorzfranus.users
+      vars:
+        users_role_action: "remove"
+        users_manage_sudoers: true
+        users_remove_dict:
+          olduser:
+            remove_home: true
+          tempuser: {}  # Use default settings
 ```
 
 ### Basic Example with Password Storage in Current Directory
 
 ```yaml
 - hosts: all
+  become: true
   roles:
-    - role: ansible-role-users
-      # Enable password storage on controller (using default filename with timestamp)
-      users_store_passwords_controller: true
-      
-      # Define users to create
-      users_dict:
-        admin:
-          comment: "System Administrator"
-          groups: ["sudo"]
-          
-        appuser:
-          comment: "Application User"
-          shell: "/bin/false"
+    - role: grzegorzfranus.users
+      vars:
+        # Enable password storage on controller (using default filename with timestamp)
+        users_store_passwords_controller: true
+
+        # Define users to create
+        users_dict:
+          admin:
+            comment: "System Administrator"
+            groups: ["sudo"]
+
+          appuser:
+            comment: "Application User"
+            shell: "/bin/false"
 ```
 
 ### Example with Custom Password Filename
 
 ```yaml
 - hosts: all
+  become: true
   roles:
-    - role: ansible-role-users
-      # Enable password storage on controller with custom filename
-      users_store_passwords_controller: true
-      users_password_store_file_name: "passwords_{{ inventory_hostname }}.txt"
-      
-      # Define users to create
-      users_dict:
-        admin:
-          comment: "System Administrator"
-          groups: ["sudo"]
+    - role: grzegorzfranus.users
+      vars:
+        # Enable password storage on controller with custom filename
+        users_store_passwords_controller: true
+        users_password_store_file_name: "passwords_{{ inventory_hostname }}.txt"
+
+        # Define users to create
+        users_dict:
+          admin:
+            comment: "System Administrator"
+            groups: ["sudo"]
 ```
 
-### Complete Example with Dictionary Format and Password Storage
+### Complete Example with Dictionary Format, Password Storage, and SSH Keys
 
 ```yaml
 - hosts: all
+  become: true
   roles:
-    - role: ansible-role-users
-      # User default settings
-      users_create_home: true
-      users_default_shell: "/bin/bash"
-      users_password_max_age: 90
-      users_password_min_age: 7
-      users_create_group: true
-      users_default_groups: ["users"]
-      
-      # Password generation and storage settings
-      users_generate_password: true
-      users_password_length: 16
-      
-      # Store passwords on Ansible controller with custom filename
-      users_store_passwords_controller: true
-      users_password_store_file_name: "users_{{ inventory_hostname }}_{{ ansible_facts['date_time']['date'] }}.txt"
-      
-      # Store passwords on remote hosts
-      users_store_passwords_remote: true
-      users_password_store_remote_path: "/root/local_passwords/user_passwords.txt"
-      
-      # SSH key management
-      users_manage_ssh_keys: true
-      
-      # Users to create
-      users_dict:
-        admin:
-          comment: "System Administrator"
-          uid: 1001
-          groups: ["wheel", "sudo"]
-          shell: "/bin/bash"
-          # Overwrite this user on subsequent runs
-          force: true
-          ssh_keys:
-            - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPM4xxxxxxxxxx admin@example.com"
-        
-        appuser:
-          comment: "Application User"
-          system: true
-          home: "/opt/app"
-          shell: "/bin/false"
-      
-      # Users to remove
-      users_remove_dict:
-        olduser:
-          remove_home: true
+    - role: grzegorzfranus.users
+      vars:
+        users_create_home: true
+        users_default_shell: "/bin/bash"
+        users_password_max_age: 90
+        users_password_min_age: 7
+        users_create_group: true
+        users_default_groups: ["users"]
+
+        # Password generation and storage settings
+        users_generate_password: true
+        users_password_length: 16
+        users_store_passwords_controller: true
+        users_password_store_file_name: "users_{{ inventory_hostname }}_{{ ansible_facts['date_time']['date'] }}.txt"
+
+        # Store passwords on remote hosts
+        users_store_passwords_remote: true
+        users_password_store_remote_path: "/root/local_passwords/user_passwords.txt"
+
+        # SSH key management
+        users_manage_ssh_keys: true
+
+        # Sudoers management
+        users_manage_sudoers: true
+
+        # Users to create
+        users_dict:
+          admin:
+            comment: "System Administrator"
+            uid: 1001
+            groups: ["wheel", "sudo"]
+            shell: "/bin/bash"
+            force: true
+            sudoers: true
+            ssh_keys:
+              - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPM4xxxxxxxxxx admin@example.com"
+
+          appuser:
+            comment: "Application User"
+            system: true
+            home: "/opt/app"
+            shell: "/bin/false"
+
+        # Users to remove
+        users_remove_dict:
+          olduser:
+            remove_home: true
 ```
 
 ### Example with All Available User Parameters
 
 ```yaml
 - hosts: all
+  become: true
   roles:
-    - role: ansible-role-users
-      users_dict:
-        fullexample:
-          # Basic user information
-          comment: "Full Example User with All Parameters"
-          uid: 1500                        # User ID
-          
-          # Group settings
-          group: "customgroup"             # Primary group (will be created if it doesn't exist)
-          groups: ["wheel", "developers"]  # Secondary groups
-          append: true                     # Add to groups without replacing existing ones
-          
-          # Shell & home settings
-          shell: "/bin/zsh"                # Login shell
-          home: "/opt/users/fullexample"   # Custom home directory
-          create_home: true                # Create home directory
-          move_home: false                 # Don't move if home exists at another location
-          
-          # System & state settings
-          system: false                    # Regular user (not system user)
-          state: "present"                 # Ensure user exists
-          
-          # Password settings
-          password: "SecureP@ss123"        # Will be hashed automatically
-          update_password: "on_create"     # Only set password when user is created
-          password_expire_max: 60          # Maximum password age in days
-          password_expire_min: 1           # Minimum password age in days
-          expires: "2025-12-31"            # Account expiration date
-          
-          # SSH settings (requires users_manage_ssh_keys: true)
-          ssh_keys:
-            - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKu/sLk+n6ViTmGwTwZI5Bmev7SMYcQ713K3ScPAFKGz user@host"
-          
-          # Misc settings
-          force: false                     # Don't force operations
-          remove: false                    # Don't remove home when state=absent
-          no_log: true                     # Don't log sensitive information
-          
-          # Custom parameters (not used by user module but passed to set_fact)
-          password_length: 20              # Custom length for generated password
+    - role: grzegorzfranus.users
+      vars:
+        users_dict:
+          fullexample:
+            # Basic user information
+            comment: "Full Example User with All Parameters"
+            uid: 1500                        # User ID
+
+            # Group settings
+            group: "customgroup"             # Primary group (will be created if it doesn't exist)
+            groups: ["wheel", "developers"]  # Secondary groups
+            append: true                     # Add to groups without replacing existing ones
+
+            # Shell & home settings
+            shell: "/bin/zsh"                # Login shell
+            home: "/opt/users/fullexample"   # Custom home directory
+            create_home: true                # Create home directory
+            move_home: false                 # Don't move if home exists at another location
+
+            # System & state settings
+            system: false                    # Regular user (not system user)
+            state: "present"                 # Ensure user exists
+
+            # Password settings
+            password: "SecureP@ss123"        # Will be hashed automatically
+            update_password: "on_create"     # Only set password when user is created
+            password_expire_max: 60          # Maximum password age in days
+            password_expire_min: 1           # Minimum password age in days
+            expires: "2025-12-31"            # Account expiration date
+
+            # SSH settings (requires users_manage_ssh_keys: true)
+            ssh_keys:
+              - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKu/sLk+n6ViTmGwTwZI5Bmev7SMYcQ713K3ScPAFKGz user@host"
+
+            # Sudoers settings (requires users_manage_sudoers: true)
+            sudoers:
+              enabled: true
+              comment: "Full access admin"
+              rules:
+                - "ALL=(ALL) NOPASSWD:ALL"
+
+            # Misc settings
+            force: false                     # Don't force operations
+            remove: false                    # Don't remove home when state=absent
+            no_log: true                     # Don't log sensitive information
+
+            # Custom parameters (not used by user module but passed to set_fact)
+            password_length: 20              # Custom length for generated password
 ```
 
 ## CI/CD Pipeline
@@ -518,18 +672,19 @@ Automated via [Release Please](https://github.com/googleapis/release-please):
 3. **Merge Release PR** → creates Git version tag and GitHub Release automatically
 4. **Ansible Galaxy Publish** → publishes tagged release to Ansible Galaxy via `ansible-publish.yml@main` with exponential backoff retry logic
 
-
 ## 🛡️ Security Features
 
+- ✅ **Visudo Syntax Validation**: All `/etc/sudoers.d/` drop-in files are validated with `visudo -cf %s` before application
+- ✅ **Strict Drop-In Permissions**: Sudoers files are created with `0440` (read-only by owner and group, no write access)
+- ✅ **Least Privilege Support**: Granular sudo rules, command restrictions, and custom `Defaults:` per user
 - ✅ **Secure Password Hashing**: SHA-512 with cryptographically secure random salts
-- ✅ **No Plain-Text Storage**: Generated passwords are never stored in plain text
-- ✅ **Controlled Logging**: Sensitive operations use `no_log: true` to prevent exposure
+- ✅ **No Plain-Text Storage**: Generated passwords are never stored in plain text in variables
+- ✅ **Controlled Logging**: Sensitive operations use `no_log: true` to prevent credential exposure
+- ✅ **Automatic Drop-In Cleanup**: Sudoers drop-in files are automatically purged when accounts are disabled or removed
 - ✅ **Privilege Escalation**: Secure sudo handling for user management operations
-- ✅ **SSH Key Validation**: Proper SSH key format validation and secure deployment
+- ✅ **SSH Key Validation**: Proper SSH key format validation and secure permissions (`0700`/`0600`)
 - ✅ **Home Directory Permissions**: Secure default permissions for user home directories
 - ✅ **Password Policies**: Configurable aging policies to enforce password rotation
-- ✅ **Account Expiration**: Support for time-based account expiration
-- ✅ **Group Management**: Secure group membership and permission assignment
 - ✅ **Audit Trail**: Comprehensive logging for security compliance and troubleshooting
 
 ### Enhanced Security Configuration
@@ -555,7 +710,20 @@ users_store_passwords_remote: false      # Don't store on remote hosts
 
 ## 🔍 Verification
 
-After deployment, verify the user management operations completed successfully:
+After deployment, verify user management and sudoers configuration:
+
+### Verify Sudoers Drop-In Configuration
+
+```bash
+# Verify active sudo permissions for a user
+sudo -l -U username
+
+# Validate syntax of all sudoers configuration files
+sudo visudo -c
+
+# Inspect generated drop-in files and permissions (must be 0440)
+ls -la /etc/sudoers.d/
+```
 
 ### Check User Account Status
 
@@ -611,8 +779,8 @@ id removed_username 2>/dev/null || echo "User successfully removed"
 # Verify home directory was removed (if configured)
 ls -la /home/removed_username 2>/dev/null || echo "Home directory successfully removed"
 
-# Check user's group was removed (if it was a unique group)
-getent group removed_username 2>/dev/null || echo "User group successfully removed"
+# Verify sudoers drop-in file was removed
+ls /etc/sudoers.d/removed_username 2>/dev/null || echo "Sudoers drop-in successfully removed"
 ```
 
 ## ⚠️ Known Issues
@@ -652,38 +820,49 @@ deprecation_warnings = False
 ```
 ansible-role-users/
 ├── .github/
-│   ├── ISSUE_TEMPLATE/                # Issue templates for bug, feature, task
-│   │   ├── bug_report.yml
-│   │   ├── config.yml
-│   │   ├── feature_request.yml
-│   │   └── task.yml
-│   ├── PULL_REQUEST_TEMPLATE/         # Pull request description template
-│   │   └── pull_request_template.md
 │   ├── workflows/
 │   │   ├── ci.yml                     # CI pipeline
 │   │   └── release.yml                # Release Please + Galaxy publish
 │   └── dependabot.yml                 # Dependabot configuration for GitHub Actions
-├── .release-please-manifest.json # Release Please version manifest
-├── release-please-config.json # Release Please configuration
 ├── defaults/
-│   └── main.yml             # Default variables
+│   └── main.yml                       # Default variables (Sections 1-6)
 ├── handlers/
-│   └── main.yml             # Service handlers
+│   └── main.yml                       # Service handlers
 ├── meta/
-│   ├── main.yml             # Role metadata
-│   └── argument_specs.yml   # Argument specs validation
-├── molecule/                # Molecule testing framework
-│   └── default/             # Default testing scenario
+│   ├── main.yml                       # Role metadata
+│   └── argument_specs.yml             # Argument specs validation
+├── molecule/                          # Molecule testing framework
+│   └── default/                       # Default testing scenario (prepare, converge, verify)
 ├── tasks/
-│   ├── main.yml             # Main orchestration and flow control
-│   ├── assert.yml           # Variable validation
-│   ├── create.yml           # User creation tasks
-│   └── remove.yml           # User removal tasks
+│   ├── main.yml                       # Main orchestration and flow control
+│   ├── assert.yml                     # Variable validation (Sections 1-6)
+│   ├── create.yml                     # User creation tasks
+│   ├── sudoers.yml                    # Per-user sudoers drop-in tasks
+│   └── remove.yml                     # User removal tasks
+├── templates/
+│   └── sudoers/
+│       └── user.j2                    # Jinja2 template for /etc/sudoers.d drop-in
 └── vars/
-    └── main.yml             # Internal variables/constants (__users_*)
+    └── main.yml                       # Internal variables/constants (__users_*)
 ```
 
 ## 🔧 Troubleshooting
+
+### Sudoers File Ignored by Sudo
+
+If sudo ignores a drop-in file:
+1. Verify the filename does not contain a dot (`.`): `sudo` explicitly ignores all files with dots in `/etc/sudoers.d/`.
+2. Check file permissions: ensure the file has mode `0440` (or `0400`) and is owned by `root:root`:
+   ```bash
+   ls -la /etc/sudoers.d/
+   chmod 0440 /etc/sudoers.d/<filename>
+   ```
+
+### Sudoers Syntax Validation Failure
+
+If task deployment fails during `visudo` validation:
+1. Verify rules syntax manually: `visudo -cf /path/to/rendered/file`
+2. Ensure there are no unexpected newlines in custom `rules` or `defaults` entries.
 
 ### User Creation Issues
 
@@ -715,11 +894,7 @@ Contributions, bug reports, and feature requests are welcome!
 - Use [Conventional Commits](https://www.conventionalcommits.org/) for commit messages
 - Centralized workflows from the `main` branch of [github-workflows](https://github.com/grzegorzfranus/github-workflows) are used to run CI/CD pipelines
 - Ensure your code passes all CI checks (YAML lint, Ansible lint, Molecule tests)
-- Submit a pull request describing your changes (a template is available under `.github/PULL_REQUEST_TEMPLATE/pull_request_template.md` to help structure your PR description)
-- For major changes, please open an issue first to discuss what you would like to change (issue templates for bug reports, feature requests, and tasks are available under `.github/ISSUE_TEMPLATE/`)
-
-
-If you have questions or suggestions, feel free to open an issue or contact the author via GitHub.
+- Submit a pull request describing your changes
 
 ## 📝 License
 

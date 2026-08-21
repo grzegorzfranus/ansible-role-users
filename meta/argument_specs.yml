@@ -3,7 +3,7 @@ argument_specs:
   main:
     short_description: "Manage system user accounts, groups, and SSH keys"
     description:
-      - "Creates, modifies, and removes user accounts with password policies and SSH key support."
+      - "Creates, modifies, and removes user accounts with password policies, SSH key support, and per-user sudoers."
       - "Supports Ubuntu 22.04/24.04/26.04, Debian 11/12/13, and EL 8/9."
     author: "Grzegorz Franus"
 
@@ -163,3 +163,42 @@ argument_specs:
         description: "Dictionary of users to remove."
         type: dict
         default: {}
+
+      # Sudoers Management
+      users_manage_sudoers:
+        description: "Master switch for per-user sudoers drop-in file management."
+        type: bool
+        default: false
+
+      users_sudoers_directory:
+        description: "Directory holding per-user sudoers drop-in files."
+        type: str
+        default: "/etc/sudoers.d"
+
+      users_sudoers_file_prefix:
+        description: "Optional filename prefix controlling include order (e.g. '10-')."
+        type: str
+        default: ""
+
+      users_sudoers_file_mode:
+        description: "Permissions of generated drop-in files."
+        type: str
+        default: "0440"
+        choices:
+          - "0440"
+          - "0400"
+
+      users_sudoers_default_rule:
+        description: "Default sudo privilege specification used for shorthand sudoers or when rules are omitted."
+        type: str
+        default: "ALL=(ALL) NOPASSWD:ALL"
+
+      users_sudoers_validate:
+        description: "Validate every rendered file with visudo before installing it."
+        type: bool
+        default: true
+
+      users_sudoers_purge_disabled:
+        description: "Remove the drop-in file when a user's sudoers block is disabled or set to absent."
+        type: bool
+        default: true

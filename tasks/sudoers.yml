@@ -1,0 +1,73 @@
+---
+# =============================================================================
+# Ansible Role: Users - Tasks: Sudoers Management
+# =============================================================================
+# Manage per-user sudoers drop-in configuration files in /etc/sudoers.d.
+# Normalizes configuration, deploys validated templates, and purges disabled files.
+# =============================================================================
+
+- name: Users | sudoers | Normalize sudoers entries from users_dict
+  ansible.builtin.set_fact:
+    __users_sudoers_list: >-
+      {{
+        __users_sudoers_list | default([]) + [
+          {
+            'name': item.key,
+            'enabled': (item.value.sudoers if item.value.sudoers is boolean else item.value.sudoers.enabled | default(true)) | bool,
+            'state': (
+              'absent' if (item.value.state | default('present') != 'present')
+              else ((item.value.sudoers.state | default('present')) if item.value.sudoers is mapping else 'present')
+            ),
+            'rules': (item.value.sudoers.rules | default([users_sudoers_default_rule])) if item.value.sudoers is mapping else [users_sudoers_default_rule],
+            'defaults': (item.value.sudoers.defaults | default([])) if item.value.sudoers is mapping else [],
+            'extra_lines': (item.value.sudoers.extra_lines | default([])) if item.value.sudoers is mapping else [],
+            'comment': (item.value.sudoers.comment | default('')) if item.value.sudoers is mapping else ''
+          }
+        ]
+      }}
+  loop: "{{ users_dict | dict2items | selectattr('value.sudoers', 'defined') | list }}"
+  loop_control:
+    label: "{{ item.key }}"
+  when:
+    - users_dict is defined
+    - users_dict | length > 0
+
+- name: Users | sudoers | Ensure sudoers drop-in directory exists
+  ansible.builtin.file:
+    path: "{{ users_sudoers_directory }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0750"
+  become: true
+
+- name: Users | sudoers | Deploy per-user sudoers drop-in files
+  ansible.builtin.template:
+    src: sudoers/user.j2
+    dest: "{{ users_sudoers_directory }}/{{ users_sudoers_file_prefix }}{{ item.name }}"
+    owner: root
+    group: root
+    mode: "{{ users_sudoers_file_mode }}"
+    backup: true
+    validate: "{{ 'visudo -cf %s' if users_sudoers_validate | bool else omit }}"
+  become: true
+  loop: "{{ __users_sudoers_list | default([]) }}"
+  loop_control:
+    label: "{{ item.name }}"
+  vars:
+    __users_sudoers_entry: "{{ item }}"
+  when:
+    - item.enabled | bool
+    - item.state == 'present'
+
+- name: Users | sudoers | Purge disabled or absent sudoers drop-in files
+  ansible.builtin.file:
+    path: "{{ users_sudoers_directory }}/{{ users_sudoers_file_prefix }}{{ item.name }}"
+    state: absent
+  become: true
+  loop: "{{ __users_sudoers_list | default([]) }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when:
+    - users_sudoers_purge_disabled | bool
+    - not (item.enabled | bool) or item.state == 'absent'

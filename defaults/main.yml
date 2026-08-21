@@ -21,6 +21,7 @@
 #   3. Password Generation Settings
 #   4. SSH Key Management
 #   5. User Definitions
+#   6. Sudoers Management
 # =============================================================================
 
 # -----------------------------------------------------------------------------
@@ -158,6 +159,18 @@ users_ssh_authorized_keys_mode: "0600"
 #     ssh_keys:
 #       - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKu/xxxxxxxxxx user@host"
 #     expires: "2025-12-31"
+#     sudoers: true  # Shorthand for passwordless sudo
+#
+#   deployer:
+#     comment: "CI/CD Deployment Account"
+#     sudoers:
+#       enabled: true
+#       state: present
+#       comment: "Restricted service management"
+#       defaults:
+#         - "!requiretty"
+#       rules:
+#         - "ALL=(root) NOPASSWD: /usr/bin/systemctl restart nginx"
 #
 #   webuser:
 #     comment: "Web Application User"
@@ -187,3 +200,38 @@ users_dict: {}
 #   retired:
 #     # Empty dict uses default settings from users_remove_home
 users_remove_dict: {}
+
+# -----------------------------------------------------------------------------
+# 6. Sudoers Management
+# -----------------------------------------------------------------------------
+# Per-user sudoers drop-in file generation in /etc/sudoers.d
+
+# Master switch for per-user sudoers drop-in file management
+# Valid values: true, false
+users_manage_sudoers: false
+
+# Directory holding per-user sudoers drop-in files
+# Valid values: absolute directory path string
+users_sudoers_directory: "/etc/sudoers.d"
+
+# Optional filename prefix controlling include order (e.g. "10-")
+# sudo ignores files containing a dot, so the prefix must not contain one
+# Valid values: string matching ^[a-zA-Z0-9_-]*$ (empty disables the prefix)
+users_sudoers_file_prefix: ""
+
+# Permissions of generated drop-in files (sudo rejects group/world writable files)
+# Valid values: "0440", "0400"
+users_sudoers_file_mode: "0440"
+
+# Privilege specification used when a user only enables sudoers without custom rules
+# Rendered as: <username> ALL=(ALL) NOPASSWD:ALL
+# Valid values: sudoers privilege specification string (single line, no newlines)
+users_sudoers_default_rule: "ALL=(ALL) NOPASSWD:ALL"
+
+# Validate every rendered file with visudo before installing it (defense-in-depth)
+# Valid values: true, false
+users_sudoers_validate: true
+
+# Remove the drop-in file when a user's sudoers block is disabled or set to absent
+# Valid values: true, false
+users_sudoers_purge_disabled: true
