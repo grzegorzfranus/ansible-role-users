@@ -268,12 +268,15 @@ When `users_manage_sudoers: true` is enabled, the role creates drop-in configura
 
 ### Configuration Formats
 
-1. **Boolean Shorthand**: Set `sudoers: true` to generate a standard passwordless full sudo rule:
+1. **Boolean Shorthand**: Set `sudoers: true` to generate a standard passwordless full sudo rule, or `sudoers: false` to disable sudoers for that user:
    ```yaml
    users_dict:
      admin:
        comment: "System Administrator"
        sudoers: true
+     guest:
+       comment: "Guest Account"
+       sudoers: false
    ```
    Renders file `/etc/sudoers.d/admin`:
    ```text
@@ -290,22 +293,25 @@ When `users_manage_sudoers: true` is enabled, the role creates drop-in configura
          enabled: true
          state: present
          comment: "Restricted service management"
+         extra_lines:
+           - "Cmnd_Alias NGINX_OPS = /usr/bin/systemctl restart nginx, /usr/bin/systemctl reload nginx"
          defaults:
            - "!requiretty"
          rules:
-           - "ALL=(root) NOPASSWD: /usr/bin/systemctl restart nginx"
+           - "ALL=(root) NOPASSWD: NGINX_OPS"
            - "ALL=(root) NOPASSWD: /usr/bin/systemctl status nginx"
    ```
    Renders file `/etc/sudoers.d/deployer`:
    ```text
    # Ansible managed
    # Restricted service management
+   Cmnd_Alias NGINX_OPS = /usr/bin/systemctl restart nginx, /usr/bin/systemctl reload nginx
    Defaults:deployer !requiretty
-   deployer ALL=(root) NOPASSWD: /usr/bin/systemctl restart nginx
+   deployer ALL=(root) NOPASSWD: NGINX_OPS
    deployer ALL=(root) NOPASSWD: /usr/bin/systemctl status nginx
    ```
 
-3. **Disabling and Purging Drop-Ins**: Set `enabled: false` or `state: absent` to purge existing drop-in files:
+3. **Disabling and Purging Drop-Ins**: Set `enabled: false`, `state: absent`, or `sudoers: false` to purge existing drop-in files:
    ```yaml
    users_dict:
      legacyuser:
@@ -319,17 +325,19 @@ When `users_manage_sudoers: true` is enabled, the role creates drop-in configura
 |-----|------|---------|-------------|
 | `enabled` | `bool` | `true` | Master toggle for generating the drop-in file for this user |
 | `state` | `str` | `"present"` | State of the drop-in file (`"present"` or `"absent"`) |
-| `rules` | `list[str]` | `[users_sudoers_default_rule]` | Sudo privilege specifications appended after the username |
-| `defaults` | `list[str]` | `[]` | Sudo Defaults entries rendered as `Defaults:<username> <entry>` |
-| `extra_lines` | `list[str]` | `[]` | Raw lines (aliases, comments) rendered before Defaults and rules |
+| `rules` | `list[str]` | `[users_sudoers_default_rule]` | List of sudo privilege specifications appended after username (must be a list of strings) |
+| `defaults` | `list[str]` | `[]` | List of sudo Defaults entries rendered as `Defaults:<username> <entry>` (must be a list of strings) |
+| `extra_lines` | `list[str]` | `[]` | List of raw lines (aliases, comments) rendered before Defaults and rules (must be a list of strings) |
 | `comment` | `str` | `""` | Optional comment rendered in the drop-in file header |
 
-### Security & Naming Constraints
+### Security, Directory Normalization & Naming Constraints
 
+- **Directory Ownership & Normalization**: The role automatically normalizes ownership and permissions of the drop-in directory (`users_sudoers_directory`) to `root:root 0750`.
 - **Permissions**: Drop-in files are created with mode `0440` (or `0400`) owned by `root:root`. Sudo ignores files with insecure permissions.
 - **Validation**: All rendered files are automatically checked with `visudo -cf %s` before deployment (`users_sudoers_validate: true`).
+- **Backup Copies**: The role runs with `backup: true`, writing rotated copies into `/etc/sudoers.d/` on change. Sudo safely ignores these files because their names contain dots and end with `~`, though they accumulate over time unless cleaned up.
 - **Filename Validation**: The combined filename (`users_sudoers_file_prefix ~ username`) must not contain a dot (`.`), as sudo strictly ignores files containing dots.
-- **Injection Protection**: Runtime assertions verify that rules, defaults, and extra lines do not contain embedded newline characters.
+- **Injection Protection**: Runtime assertions verify that `rules`, `defaults`, and `extra_lines` are lists of strings and do not contain embedded newline characters.
 
 ## 🔐 Secure Password Management
 
@@ -461,10 +469,12 @@ ansible-playbook playbook.yml --skip-tags "remove,cleanup"
             comment: "CI/CD Service Account"
             sudoers:
               comment: "Restricted systemd lifecycle operations"
+              extra_lines:
+                - "Cmnd_Alias NGINX_OPS = /usr/bin/systemctl restart nginx, /usr/bin/systemctl reload nginx"
               defaults:
                 - "!requiretty"
               rules:
-                - "ALL=(root) NOPASSWD: /usr/bin/systemctl restart nginx"
+                - "ALL=(root) NOPASSWD: NGINX_OPS"
                 - "ALL=(root) NOPASSWD: /usr/bin/systemctl status nginx"
 ```
 
@@ -484,7 +494,48 @@ ansible-playbook playbook.yml --skip-tags "remove,cleanup"
           tempuser: {}  # Use default settings
 ```
 
-### Complete Example with Password Storage and SSH Keys
+### Basic Example with Password Storage in Current Directory
+
+```yaml
+- hosts: all
+  become: true
+  roles:
+    - role: grzegorzfranus.users
+      vars:
+        # Enable password storage on controller (using default filename with timestamp)
+        users_store_passwords_controller: true
+
+        # Define users to create
+        users_dict:
+          admin:
+            comment: "System Administrator"
+            groups: ["sudo"]
+
+          appuser:
+            comment: "Application User"
+            shell: "/bin/false"
+```
+
+### Example with Custom Password Filename
+
+```yaml
+- hosts: all
+  become: true
+  roles:
+    - role: grzegorzfranus.users
+      vars:
+        # Enable password storage on controller with custom filename
+        users_store_passwords_controller: true
+        users_password_store_file_name: "passwords_{{ inventory_hostname }}.txt"
+
+        # Define users to create
+        users_dict:
+          admin:
+            comment: "System Administrator"
+            groups: ["sudo"]
+```
+
+### Complete Example with Dictionary Format, Password Storage, and SSH Keys
 
 ```yaml
 - hosts: all
@@ -504,6 +555,10 @@ ansible-playbook playbook.yml --skip-tags "remove,cleanup"
         users_password_length: 16
         users_store_passwords_controller: true
         users_password_store_file_name: "users_{{ inventory_hostname }}_{{ ansible_facts['date_time']['date'] }}.txt"
+
+        # Store passwords on remote hosts
+        users_store_passwords_remote: true
+        users_password_store_remote_path: "/root/local_passwords/user_passwords.txt"
 
         # SSH key management
         users_manage_ssh_keys: true
@@ -535,6 +590,88 @@ ansible-playbook playbook.yml --skip-tags "remove,cleanup"
             remove_home: true
 ```
 
+### Example with All Available User Parameters
+
+```yaml
+- hosts: all
+  become: true
+  roles:
+    - role: grzegorzfranus.users
+      vars:
+        users_dict:
+          fullexample:
+            # Basic user information
+            comment: "Full Example User with All Parameters"
+            uid: 1500                        # User ID
+
+            # Group settings
+            group: "customgroup"             # Primary group (will be created if it doesn't exist)
+            groups: ["wheel", "developers"]  # Secondary groups
+            append: true                     # Add to groups without replacing existing ones
+
+            # Shell & home settings
+            shell: "/bin/zsh"                # Login shell
+            home: "/opt/users/fullexample"   # Custom home directory
+            create_home: true                # Create home directory
+            move_home: false                 # Don't move if home exists at another location
+
+            # System & state settings
+            system: false                    # Regular user (not system user)
+            state: "present"                 # Ensure user exists
+
+            # Password settings
+            password: "SecureP@ss123"        # Will be hashed automatically
+            update_password: "on_create"     # Only set password when user is created
+            password_expire_max: 60          # Maximum password age in days
+            password_expire_min: 1           # Minimum password age in days
+            expires: "2025-12-31"            # Account expiration date
+
+            # SSH settings (requires users_manage_ssh_keys: true)
+            ssh_keys:
+              - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKu/sLk+n6ViTmGwTwZI5Bmev7SMYcQ713K3ScPAFKGz user@host"
+
+            # Sudoers settings (requires users_manage_sudoers: true)
+            sudoers:
+              enabled: true
+              comment: "Full access admin"
+              rules:
+                - "ALL=(ALL) NOPASSWD:ALL"
+
+            # Misc settings
+            force: false                     # Don't force operations
+            remove: false                    # Don't remove home when state=absent
+            no_log: true                     # Don't log sensitive information
+
+            # Custom parameters (not used by user module but passed to set_fact)
+            password_length: 20              # Custom length for generated password
+```
+
+## CI/CD Pipeline
+
+This repository uses centralized, reusable GitHub Actions workflows from the `main` branch of [grzegorzfranus/github-workflows](https://github.com/grzegorzfranus/github-workflows) for quality assurance, security scanning, and release automation. Consuming the `main` branch ensures upstream workflow changes and security enhancements take effect immediately without requiring a version bump in this repository.
+
+### CI Pipeline (`ansible-ci.yml@main`)
+
+Runs on every Pull Request in a two-tier gate pattern:
+
+1. **Branch Name Lint** — enforces naming conventions (`feature/`, `bugfix/`, `fix/`, `hotfix/`, `release/`, `chore/`, `docs/`, `refactor/`, `test/`, `build/`, `ci/`, `perf/`, `revert/`)
+2. **PR Title Lint** — enforces [Conventional Commits](https://www.conventionalcommits.org/) format (`feat:`, `fix:`, `ci:`, etc.)
+3. **YAML Syntax Lint** — validates YAML formatting via `yamllint`
+4. **Ansible Lint** — checks Ansible best practices and role standards
+5. **Galaxy Metadata Validation** — verifies `meta/main.yml` schema and requirements (`ansible-meta-validate.yml`)
+6. **Security Scanning** — TruffleHog secret detection and Trivy IaC scanning (`ansible-security.yml`)
+7. **Molecule Integration Tests** — executes Molecule test matrix across Ubuntu 26.04, Ubuntu 24.04, Ubuntu 22.04, Debian 13, Debian 12, Debian 11, and Rocky Linux 9 (`ansible-molecule.yml`)
+8. **Merge Check Gate** — single authoritative status check aggregating all results for branch protection
+
+### Release & Publish Pipeline (`ansible-publish.yml@main`)
+
+Automated via [Release Please](https://github.com/googleapis/release-please):
+
+1. **Push to `main`** → Release Please creates or updates a Release PR with automated changelog generation
+2. **Release PR Validation** → validates YAML syntax and actions schema before setting `Merge Check` status
+3. **Merge Release PR** → creates Git version tag and GitHub Release automatically
+4. **Ansible Galaxy Publish** → publishes tagged release to Ansible Galaxy via `ansible-publish.yml@main` with exponential backoff retry logic
+
 ## 🛡️ Security Features
 
 - ✅ **Visudo Syntax Validation**: All `/etc/sudoers.d/` drop-in files are validated with `visudo -cf %s` before application
@@ -549,6 +686,27 @@ ansible-playbook playbook.yml --skip-tags "remove,cleanup"
 - ✅ **Home Directory Permissions**: Secure default permissions for user home directories
 - ✅ **Password Policies**: Configurable aging policies to enforce password rotation
 - ✅ **Audit Trail**: Comprehensive logging for security compliance and troubleshooting
+
+### Enhanced Security Configuration
+
+```yaml
+# Enable secure password generation with strong policies
+users_generate_password: true
+users_password_length: 20
+users_password_hash_algorithm: "sha512"
+users_password_max_age: 60
+users_password_min_age: 7
+
+# SSH key management with secure defaults
+users_manage_ssh_keys: true
+users_ssh_key_type: "ed25519"
+users_ssh_directory_mode: "0700"
+users_ssh_authorized_keys_mode: "0600"
+
+# Secure password storage (choose one approach)
+users_store_passwords_controller: false  # Don't store on controller
+users_store_passwords_remote: false      # Don't store on remote hosts
+```
 
 ## 🔍 Verification
 
@@ -599,6 +757,19 @@ cat /home/username/.ssh/authorized_keys
 ssh -i private_key username@hostname
 ```
 
+### Check Password Generation
+
+```bash
+# If passwords stored on remote host
+sudo cat /path/to/password/file
+
+# If passwords stored on controller
+cat local_password_file.txt
+
+# Verify password hash in shadow file
+sudo grep username /etc/shadow
+```
+
 ### Verify User Removal
 
 ```bash
@@ -611,6 +782,38 @@ ls -la /home/removed_username 2>/dev/null || echo "Home directory successfully r
 # Verify sudoers drop-in file was removed
 ls /etc/sudoers.d/removed_username 2>/dev/null || echo "Sudoers drop-in successfully removed"
 ```
+
+## ⚠️ Known Issues
+
+### Ansible Deprecation Warning (ansible-core 2.17+)
+
+When using this role with ansible-core 2.17 or later, you may see the following deprecation warning:
+
+```
+[DEPRECATION WARNING]: Importing 'to_native' from 'ansible.module_utils._text' is deprecated.
+This feature will be removed from ansible-core version 2.24.
+Use ansible.module_utils.common.text.converters instead.
+```
+
+**This warning is NOT a defect in this role.** It originates from Ansible's internal `ansible.builtin.authorized_key` module code. Key points:
+
+- ✅ **No action required** - The role functions correctly despite the warning
+- ✅ **Cosmetic only** - This is a deprecation notice, not an error
+- ✅ **Will be fixed by Ansible** - The Ansible core team will update the module before version 2.24
+- ✅ **No role code changes needed** - The deprecated import is in Ansible's internal module code
+
+To suppress this warning temporarily, you can set the environment variable:
+```bash
+export ANSIBLE_DEPRECATION_WARNINGS=False
+```
+
+Or in your `ansible.cfg`:
+```ini
+[defaults]
+deprecation_warnings = False
+```
+
+**Note:** Suppressing warnings is not recommended for production use as it may hide other important deprecation notices.
 
 ## 📁 File Structure
 
@@ -689,7 +892,7 @@ Contributions, bug reports, and feature requests are welcome!
 
 - Fork the repository and create your branch from `main`
 - Use [Conventional Commits](https://www.conventionalcommits.org/) for commit messages
-- Centralized workflows from [github-workflows](https://github.com/grzegorzfranus/github-workflows) version `v3.1.3` are used to run CI/CD pipelines
+- Centralized workflows from the `main` branch of [github-workflows](https://github.com/grzegorzfranus/github-workflows) are used to run CI/CD pipelines
 - Ensure your code passes all CI checks (YAML lint, Ansible lint, Molecule tests)
 - Submit a pull request describing your changes
 
