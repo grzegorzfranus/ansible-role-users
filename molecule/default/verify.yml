@@ -47,7 +47,21 @@
         - testuser1
         - testuser2
         - testuser3
+        - testuser4
       ignore_errors: true
+
+    - name: Verify | Check if absent user testuser5 does not exist
+      ansible.builtin.command: id testuser5
+      register: _testuser5_exists_result_
+      failed_when: false
+      changed_when: false
+
+    - name: Verify | Assert testuser5 does not exist
+      ansible.builtin.assert:
+        that:
+          - _testuser5_exists_result_.rc != 0
+        fail_msg: "testuser5 exists but was configured with state=absent"
+        success_msg: "testuser5 correctly does not exist on the system"
 
     - name: Verify | Check if testuser1 has correct UID
       ansible.builtin.command: id -u testuser1
@@ -72,6 +86,7 @@
         - { user: 'testuser1', expected: '/bin/bash' }
         - { user: 'testuser2', expected: '/bin/false' }
         - { user: 'testuser3', expected: '/bin/bash' }
+        - { user: 'testuser4', expected: '/bin/bash' }
       changed_when: false
       ignore_errors: true
 
@@ -85,6 +100,7 @@
         - { user: 'testuser1', group: 'developers' }
         - { user: 'testuser1', group: 'testgroup' }
         - { user: 'testuser3', group: 'testgroup' }
+        - { user: 'testuser4', group: 'testgroup' }
       changed_when: false
       ignore_errors: true
 
@@ -120,6 +136,7 @@
         - { path: '/home/testuser1', owner: 'testuser1' }
         - { path: '/opt/testuser2', owner: 'testuser2' }
         - { path: '/home/testuser3', owner: 'testuser3' }
+        - { path: '/home/testuser4', owner: 'testuser4' }
       ignore_errors: true
 
     - name: Verify | Check home directory permissions for testuser1
@@ -213,15 +230,17 @@
         src: /etc/sudoers.d/testuser2
       register: __verify_sudoers_testuser2_content
 
-    - name: Verify | Assert testuser2 sudoers file contains custom rules and defaults
+    - name: Verify | Assert testuser2 sudoers file contains extra_lines, defaults, and rules in order
       ansible.builtin.assert:
         that:
           - "'# Restricted service lifecycle management' in (__verify_sudoers_testuser2_content.content | b64decode)"
+          - "'Cmnd_Alias NGINX_OPS = /usr/bin/systemctl restart nginx, /usr/bin/systemctl status nginx' in (__verify_sudoers_testuser2_content.content | b64decode)"
           - "'Defaults:testuser2 !requiretty' in (__verify_sudoers_testuser2_content.content | b64decode)"
-          - "'testuser2 ALL=(root) NOPASSWD: /usr/bin/systemctl restart nginx' in (__verify_sudoers_testuser2_content.content | b64decode)"
-          - "'testuser2 ALL=(root) NOPASSWD: /usr/bin/systemctl status nginx' in (__verify_sudoers_testuser2_content.content | b64decode)"
-        fail_msg: "testuser2 sudoers file does not contain expected custom rules, defaults, or comment"
-        success_msg: "testuser2 sudoers file custom rules, defaults, and comment verified"
+          - "'testuser2 ALL=(root) NOPASSWD: NGINX_OPS' in (__verify_sudoers_testuser2_content.content | b64decode)"
+          - "(__verify_sudoers_testuser2_content.content | b64decode).find('Cmnd_Alias') < (__verify_sudoers_testuser2_content.content | b64decode).find('Defaults:')"
+          - "(__verify_sudoers_testuser2_content.content | b64decode).find('Defaults:') < (__verify_sudoers_testuser2_content.content | b64decode).find('testuser2 ALL=')"
+        fail_msg: "testuser2 sudoers file missing content or has invalid block ordering"
+        success_msg: "testuser2 sudoers file extra_lines, defaults, rules, and block ordering verified"
 
     - name: Verify | Stat purged testuser3 sudoers drop-in file
       ansible.builtin.stat:
@@ -232,8 +251,32 @@
       ansible.builtin.assert:
         that:
           - not __verify_sudoers_testuser3.stat.exists
-        fail_msg: "testuser3 sudoers drop-in was not purged when disabled"
+        fail_msg: "testuser3 sudoers drop-in was not purged when enabled=false"
         success_msg: "testuser3 sudoers drop-in successfully purged"
+
+    - name: Verify | Stat purged testuser4 sudoers drop-in file
+      ansible.builtin.stat:
+        path: /etc/sudoers.d/testuser4
+      register: __verify_sudoers_testuser4
+
+    - name: Verify | Assert testuser4 sudoers drop-in was purged
+      ansible.builtin.assert:
+        that:
+          - not __verify_sudoers_testuser4.stat.exists
+        fail_msg: "testuser4 sudoers drop-in was not purged when state=absent"
+        success_msg: "testuser4 sudoers drop-in successfully purged (state=absent)"
+
+    - name: Verify | Stat testuser5 sudoers drop-in file
+      ansible.builtin.stat:
+        path: /etc/sudoers.d/testuser5
+      register: __verify_sudoers_testuser5
+
+    - name: Verify | Assert testuser5 sudoers drop-in was not created for absent user
+      ansible.builtin.assert:
+        that:
+          - not __verify_sudoers_testuser5.stat.exists
+        fail_msg: "testuser5 sudoers drop-in was erroneously created for an absent user"
+        success_msg: "testuser5 correctly has no sudoers drop-in file"
 
     - name: Verify | Stat removed testuser_remove sudoers drop-in file
       ansible.builtin.stat:

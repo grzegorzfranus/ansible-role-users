@@ -88,11 +88,12 @@
           enabled: true
           state: present
           comment: "Restricted service lifecycle management"
+          extra_lines:
+            - "Cmnd_Alias NGINX_OPS = /usr/bin/systemctl restart nginx, /usr/bin/systemctl status nginx"
           defaults:
             - "!requiretty"
           rules:
-            - "ALL=(root) NOPASSWD: /usr/bin/systemctl restart nginx"
-            - "ALL=(root) NOPASSWD: /usr/bin/systemctl status nginx"
+            - "ALL=(root) NOPASSWD: NGINX_OPS"
 
       testuser3:
         comment: "Test User 3"
@@ -101,6 +102,16 @@
         password_expire_max: 60
         sudoers:
           enabled: false
+
+      testuser4:
+        comment: "Test User 4"
+        uid: 2004
+        sudoers:
+          state: absent
+
+      testuser5:
+        state: absent
+        sudoers: true
 
     users_remove_dict:
       testuser_remove:

@@ -80,14 +80,6 @@
         state: present
         createhome: true
 
-    - name: Prepare | Ensure sudoers.d directory exists
-      ansible.builtin.file:
-        path: /etc/sudoers.d
-        state: directory
-        owner: root
-        group: root
-        mode: "0750"
-
     - name: Prepare | Pre-create sudoers drop-in files for removal and purge testing
       ansible.builtin.copy:
         content: |
@@ -100,3 +92,4 @@
       loop:
         - testuser_remove
         - testuser3
+        - testuser4
