@@ -202,3 +202,19 @@ argument_specs:
         description: "Remove the drop-in file when a user's sudoers block is disabled or set to absent."
         type: bool
         default: true
+
+      users_sudoers_files_absent:
+        description: "Drop-in filenames inside users_sudoers_directory to delete for foreign or unowned sudo rules."
+        type: list
+        elements: str
+        default: []
+
+      users_remove_main_sudoers_rules:
+        description: "Whether to remove rule lines for deleted users from the main sudoers file."
+        type: bool
+        default: true
+
+      users_sudoers_main_file:
+        description: "Path to the main sudoers file."
+        type: str
+        default: "/etc/sudoers"

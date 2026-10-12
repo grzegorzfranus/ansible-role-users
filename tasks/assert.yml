@@ -312,6 +312,54 @@
     success_msg: "users_sudoers_purge_disabled is valid: {{ users_sudoers_purge_disabled }}"
   when: users_manage_sudoers | bool
 
+- name: Users | assert | Validate users_sudoers_files_absent parameter
+  ansible.builtin.assert:
+    that:
+      - users_sudoers_files_absent is defined
+      - users_sudoers_files_absent is sequence
+      - users_sudoers_files_absent is not string
+      - users_sudoers_files_absent is not mapping
+    fail_msg: "users_sudoers_files_absent must be a list of filename strings"
+    success_msg: "users_sudoers_files_absent list structure is valid"
+
+- name: Users | assert | Validate users_sudoers_files_absent entries
+  ansible.builtin.assert:
+    that:
+      - item is string
+      - item | length > 0
+      - item is not search('/')
+      - item != '.'
+      - item != '..'
+    fail_msg: >-
+      Invalid filename '{{ item }}' in users_sudoers_files_absent.
+      Must be a non-empty string without '/' and not '.' or '..'
+    success_msg: "users_sudoers_files_absent entry '{{ item }}' is valid"
+  loop: "{{ users_sudoers_files_absent }}"
+  loop_control:
+    label: "{{ item }}"
+  when:
+    - users_sudoers_files_absent is sequence
+    - users_sudoers_files_absent is not string
+    - users_sudoers_files_absent | length > 0
+
+- name: Users | assert | Validate users_remove_main_sudoers_rules parameter
+  ansible.builtin.assert:
+    that:
+      - users_remove_main_sudoers_rules is defined
+      - users_remove_main_sudoers_rules is boolean
+    fail_msg: "users_remove_main_sudoers_rules must be a boolean (true/false)"
+    success_msg: "users_remove_main_sudoers_rules is valid: {{ users_remove_main_sudoers_rules }}"
+
+- name: Users | assert | Validate users_sudoers_main_file parameter
+  ansible.builtin.assert:
+    that:
+      - users_sudoers_main_file is defined
+      - users_sudoers_main_file is string
+      - users_sudoers_main_file | length > 0
+      - users_sudoers_main_file is match('^/')
+    fail_msg: "users_sudoers_main_file must be an absolute path string starting with '/'"
+    success_msg: "users_sudoers_main_file is valid: {{ users_sudoers_main_file }}"
+
 - name: Users | assert | Validate per-user sudoers configuration structure
   ansible.builtin.assert:
     that:

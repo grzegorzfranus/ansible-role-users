@@ -66,6 +66,7 @@
     users_password_length: 16
     users_manage_ssh_keys: true
     users_manage_sudoers: true
+    users_sudoers_files_absent: ["90-test-foreign"]
 
     # Test user definitions
     users_dict:

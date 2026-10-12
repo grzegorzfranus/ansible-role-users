@@ -1,0 +1,17 @@
+---
+# =============================================================================
+# Ansible Role: Users - Tasks: Sudoers Cleanup
+# =============================================================================
+# Remove foreign or unowned sudoers drop-in files from users_sudoers_directory.
+# =============================================================================
+
+# Remove foreign drop-in files from users_sudoers_directory that the role does not own
+# (e.g. vendor or cloud-init defaults) to prevent unauthorized privilege escalation.
+- name: Users | sudoers_cleanup | Remove foreign sudoers drop-in files
+  ansible.builtin.file:
+    path: "{{ users_sudoers_directory }}/{{ item }}"
+    state: absent
+  become: true
+  loop: "{{ users_sudoers_files_absent }}"
+  loop_control:
+    label: "{{ item }}"

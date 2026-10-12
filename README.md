@@ -203,6 +203,9 @@ This role does not set any public output facts. All internal facts use the doubl
 | `users_sudoers_default_rule` | Privilege specification used when a user only enables sudoers without custom rules | `"ALL=(ALL) NOPASSWD:ALL"` |
 | `users_sudoers_validate` | Validate every rendered file with `visudo -cf %s` before installing | `true` |
 | `users_sudoers_purge_disabled` | Remove drop-in file when user sudoers block is disabled or absent | `true` |
+| `users_sudoers_files_absent` | Foreign drop-in filenames in `users_sudoers_directory` to remove | `[]` |
+| `users_remove_main_sudoers_rules` | Remove rule lines for deleted users from main sudoers file | `true` |
+| `users_sudoers_main_file` | Path to the main sudoers file | `"/etc/sudoers"` |
 
 ### Internal Constants (System Paths and Commands)
 
@@ -338,6 +341,23 @@ When `users_manage_sudoers: true` is enabled, the role creates drop-in configura
 - **Backup Copies**: The role runs with `backup: true`, writing rotated copies into `/etc/sudoers.d/` on change. Sudo safely ignores these files because their names contain dots and end with `~`, though they accumulate over time unless cleaned up.
 - **Filename Validation**: The combined filename (`users_sudoers_file_prefix ~ username`) must not contain a dot (`.`), as sudo strictly ignores files containing dots.
 - **Injection Protection**: Runtime assertions verify that `rules`, `defaults`, and `extra_lines` are lists of strings and do not contain embedded newline characters.
+
+### Cleaning up sudo rules the role does not own
+
+The role provides two cleanup mechanisms for sudo rules that were created externally:
+
+1. **Foreign drop-in removal**: Use `users_sudoers_files_absent` to delete specific drop-in files from
+   `users_sudoers_directory` (e.g. cloud-init's `90-cloud-init-users` that grants the deleted default user passwordless
+   root). This operates independently of `users_manage_sudoers` and of user removal:
+   ```yaml
+   users_sudoers_files_absent: ["90-cloud-init-users"]
+   ```
+
+2. **Main sudoers file cleanup on user removal**: When users in `users_remove_dict` are removed and
+   `users_remove_main_sudoers_rules: true` (default), the role deletes rule lines starting with the user's name
+   from `users_sudoers_main_file` (`/etc/sudoers`). Note that this cleanup removes only `<user> ...` rule lines;
+   `Defaults:<user>` lines and aliases are untouched. Every modification to the main sudoers file is validated
+   with `visudo -cf %s` to ensure file integrity.
 
 ## 🔐 Secure Password Management
 
