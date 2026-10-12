@@ -5,6 +5,13 @@ All notable changes to this User Management role will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0](https://github.com/grzegorzfranus/ansible-role-users/compare/v1.4.0...v1.5.0) (2026-10-12)
+
+
+### Features
+
+* **users:** remove foreign sudoers drop-ins and removed users' main sudoers rules ([#33](https://github.com/grzegorzfranus/ansible-role-users/issues/33)) ([db9b3ba](https://github.com/grzegorzfranus/ansible-role-users/commit/db9b3bad3bf0ce1be588b4074a10cd4bcd0b15bf))
+
 ## [1.4.0](https://github.com/grzegorzfranus/ansible-role-users/compare/v1.3.1...v1.4.0) (2026-08-21)
 
 
