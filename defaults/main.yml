@@ -235,3 +235,16 @@ users_sudoers_validate: true
 # Remove the drop-in file when a user's sudoers block is disabled or set to absent
 # Valid values: true, false
 users_sudoers_purge_disabled: true
+
+# Drop-in filenames (not paths) in users_sudoers_directory to delete for unowned sudo rules (e.g. 90-cloud-init-users)
+# Operates independently of users_manage_sudoers and user removal
+# Valid values: list of non-empty filename strings without path separators
+users_sudoers_files_absent: []
+
+# Remove rule lines for deleted users from the main sudoers file on user removal (Defaults and aliases untouched)
+# Valid values: true, false
+users_remove_main_sudoers_rules: true
+
+# Path to the main sudoers configuration file
+# Valid values: absolute file path string
+users_sudoers_main_file: "/etc/sudoers"

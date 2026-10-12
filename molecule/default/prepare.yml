@@ -12,6 +12,7 @@
 # 1. Fix system file permissions
 # 2. Validate system state
 # 3. Pre-create test sudoers drop-in files for purge/removal validation
+# 4. Pre-create foreign sudoers drop-in and main sudoers rule for cleanup testing
 # =============================================================================
 
 # -----------------------------------------------------------------------------
@@ -93,3 +94,19 @@
         - testuser_remove
         - testuser3
         - testuser4
+
+    - name: Prepare | Pre-create foreign sudoers drop-in file for cleanup testing
+      ansible.builtin.copy:
+        content: "nobody ALL=(ALL) NOPASSWD: /bin/true\n"
+        dest: /etc/sudoers.d/90-test-foreign
+        owner: root
+        group: root
+        mode: "0440"
+        validate: "visudo -cf %s"
+
+    - name: Prepare | Add testuser_remove rule to main sudoers file
+      ansible.builtin.lineinfile:
+        path: /etc/sudoers
+        line: "testuser_remove ALL=(ALL:ALL) NOPASSWD: ALL"
+        state: present
+        validate: "visudo -cf %s"

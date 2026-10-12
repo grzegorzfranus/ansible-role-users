@@ -44,3 +44,17 @@
     label: "{{ item.name }}"
   when:
     - users_manage_sudoers | bool
+
+# Hand-written rules in the main file survive userdel and would grant a re-created user of the same name
+# its old rights; validation keeps a broken file from being written.
+- name: Users | remove | Remove removed users' rules from the main sudoers file
+  ansible.builtin.lineinfile:
+    path: "{{ users_sudoers_main_file }}"
+    regexp: "^\\s*{{ item.name | regex_escape }}\\s"
+    state: absent
+    validate: "visudo -cf %s"
+  become: true
+  loop: "{{ __users_remove_list | default([]) }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: users_remove_main_sudoers_rules | bool

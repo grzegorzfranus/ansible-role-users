@@ -22,6 +22,7 @@
 # 6. Verify user removal
 # 7. Verify password expiry
 # 8. Verify sudoers drop-in files
+# 9. Verify foreign and unowned sudoers cleanup
 # =============================================================================
 
 # -----------------------------------------------------------------------------
@@ -314,3 +315,44 @@
           - "'NOPASSWD' in __verify_sudo_list_testuser1.stdout"
         fail_msg: "testuser1 does not have expected NOPASSWD sudo permissions"
         success_msg: "testuser1 active NOPASSWD sudo permissions verified"
+
+    # -----------------------------------------------------------------------------
+    # 9. Foreign and Unowned Sudoers Cleanup Verification
+    # -----------------------------------------------------------------------------
+    - name: Verify | Stat foreign sudoers drop-in file
+      ansible.builtin.stat:
+        path: /etc/sudoers.d/90-test-foreign
+      register: __verify_sudoers_foreign
+
+    - name: Verify | Assert foreign sudoers drop-in was removed
+      ansible.builtin.assert:
+        that:
+          - not __verify_sudoers_foreign.stat.exists
+        fail_msg: "Foreign sudoers drop-in file 90-test-foreign still exists"
+        success_msg: "Foreign sudoers drop-in file 90-test-foreign was successfully removed"
+
+    - name: Verify | Slurp main sudoers file
+      ansible.builtin.slurp:
+        src: /etc/sudoers
+      register: __verify_sudoers_main
+
+    - name: Verify | Assert testuser_remove rules were removed from main sudoers file
+      ansible.builtin.assert:
+        that:
+          - >
+            ((__verify_sudoers_main.content | b64decode).splitlines() |
+             map('regex_search', '^\s*testuser_remove\s') | select | list | length) == 0
+        fail_msg: "testuser_remove rule still present in /etc/sudoers"
+        success_msg: "testuser_remove rule successfully removed from /etc/sudoers"
+
+    - name: Verify | Run visudo syntax validation after cleanup
+      ansible.builtin.command: visudo -c
+      register: __verify_visudo_cleanup
+      changed_when: false
+
+    - name: Verify | Assert visudo syntax validation passed after cleanup
+      ansible.builtin.assert:
+        that:
+          - __verify_visudo_cleanup.rc == 0
+        fail_msg: "visudo syntax validation failed after cleanup"
+        success_msg: "visudo syntax validation passed successfully after cleanup (rc=0)"
