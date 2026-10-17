@@ -5,6 +5,13 @@ All notable changes to this User Management role will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.1](https://github.com/grzegorzfranus/ansible-role-users/compare/v1.5.0...v1.5.1) (2026-10-17)
+
+
+### CI/CD
+
+* **workflows:** align Dependabot, release and CI workflows with github-workflows ([#36](https://github.com/grzegorzfranus/ansible-role-users/issues/36)) ([#37](https://github.com/grzegorzfranus/ansible-role-users/issues/37)) ([321c8b8](https://github.com/grzegorzfranus/ansible-role-users/commit/321c8b880f6a6d52525f38947f2139560ae73709))
+
 ## [1.5.0](https://github.com/grzegorzfranus/ansible-role-users/compare/v1.4.0...v1.5.0) (2026-10-12)
 
 
